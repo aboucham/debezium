@@ -31,10 +31,10 @@ INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
 INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
 ```
 
-# kafka Connect CR - Build - SQL Instances:
-
+## kafka Connect CR - Build - SQL Instances:
 ## Kafka connect CR ######
 
+```
 oc create -f - <<EOF
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnect
@@ -80,7 +80,7 @@ spec:
         secretName: my-cluster-cluster-ca-cert
   version: 3.5.0
 EOF
-#######################
+```
 
 ## Check
 
