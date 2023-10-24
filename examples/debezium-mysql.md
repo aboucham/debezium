@@ -121,3 +121,33 @@ spec:
 EOF
 ```
 
+## Check Status:
+
+```
+$ oc get kctr
+NAME              CLUSTER             CONNECTOR CLASS                              MAX TASKS   READY
+mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector   1           True
+```
+```
+oc get kctr mysql-connector -o yaml | yq read - 'status'
+
+status:
+  conditions:
+  - lastTransitionTime: "2023-10-24T12:12:59.267139132Z"
+    status: "True"
+    type: Ready
+  connectorStatus:
+    connector:
+      state: RUNNING
+      worker_id: 10.131.0.22:8083
+    name: mysql-connector
+    tasks:
+    - id: 0
+      state: RUNNING
+      worker_id: 10.131.0.22:8083
+    type: source
+  observedGeneration: 1
+  tasksMax: 1
+  topics:
+  - mysql.inventory.products
+```
