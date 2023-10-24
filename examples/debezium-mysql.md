@@ -116,8 +116,8 @@ spec:
     schema.history.internal.kafka.topic: schemahistory.fullfillment
     schema.history.internal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
     topic.prefix: mysql
-    topic.creation.default.replication.factor: 3
-    topic.creation.default.partitions: 3
+    topic.creation.default.replication.factor: 1
+    topic.creation.default.partitions: 1
 EOF
 ```
 
