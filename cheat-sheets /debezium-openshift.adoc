@@ -150,6 +150,33 @@ export CONNECTOR=inventory-connector
 ----
 
 === Check the available connector plugins:
+
+==== Command line
+
+[source, yaml,indent=0]
+----
+oc get kc dbz-mysql-connect -o yaml | yq '.status.connectorPlugins'
+- class: io.debezium.connector.mongodb.MongoDbConnector
+  type: source
+  version: 2.4.0.Final
+- class: io.debezium.connector.mysql.MySqlConnector
+  type: source
+  version: 2.4.0.Final
+- class: io.debezium.connector.postgresql.PostgresConnector
+  type: source
+  version: 2.4.0.Final
+- class: org.apache.kafka.connect.mirror.MirrorCheckpointConnector
+  type: source
+  version: 3.5.0.redhat-00014
+- class: org.apache.kafka.connect.mirror.MirrorHeartbeatConnector
+  type: source
+  version: 3.5.0.redhat-00014
+- class: org.apache.kafka.connect.mirror.MirrorSourceConnector
+  type: source
+  version: 3.5.0.redhat-00014
+----
+
+==== Rest API
 [cols="35,65"]
 |===
 
