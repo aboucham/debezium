@@ -131,113 +131,11 @@ Ensure Type and Status columns are set to Ready and True.
 
 [source, yaml,indent=0]
 ----
-status:
-  conditions:
-    - lastTransitionTime: '2023-10-24T10:17:25.282337453Z'
-      status: 'True'
-      type: Ready
-  connectorPlugins:
-    - class: io.debezium.connector.mongodb.MongoDbConnector
-      type: source
-      version: 2.4.0.Final
-    - class: io.debezium.connector.mysql.MySqlConnector
-      type: source
-      version: 2.4.0.Final
-    - class: io.debezium.connector.postgresql.PostgresConnector
-      type: source
-      version: 2.4.0.Final
-    - class: org.apache.kafka.connect.mirror.MirrorCheckpointConnector
-      type: source
-      version: 3.5.0.redhat-00014
-    - class: org.apache.kafka.connect.mirror.MirrorHeartbeatConnector
-      type: source
-      version: 3.5.0.redhat-00014
-    - class: org.apache.kafka.connect.mirror.MirrorSourceConnector
-      type: source
-      version: 3.5.0.redhat-00014
-  labelSelector: >-
-    strimzi.io/cluster=dbz-mysql-connect,strimzi.io/name=dbz-mysql-connect-connect,strimzi.io/kind=KafkaConnect
-  observedGeneration: 1
-  replicas: 1
-  url: 'http://dbz-mysql-connect-connect-api.dbz-mysql.svc:8083'
+$ oc get kc dbz-mysql-connect -o yaml | yq '.status.conditions'
+- lastTransitionTime: "2023-10-24T10:17:25.282337453Z"
+  status: "True"
+  type: Ready
 ----
-
-////
-== Deployment
-
-Debezium is based on Apache Kafka and Kafka Connect, and can be run on `Kubernetes` and `OpenShift` via the https://strimzi.io[Strimzi] project. `Strimzi` provides a set of operators and container images for running Kafka on Kubernetes and OpenShift. 
-
-=== Deploy Kafka & Kafka Connect
-
-[source, shell,indent=0]
-----
-oc new-project myproject
-# install the Strimzi operator 
-oc apply -f https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.19.0/strimzi-cluster-operator-0.19.0.yaml
-# Deploy a single node Kafka broker
-oc apply -f https://github.com/strimzi/strimzi-kafka-operator/raw/0.19.0/examples/kafka/kafka-persistent-single.yaml
-# Deploy a single instance of Kafka Connect with no plug-in installed
-oc apply -f https://github.com/strimzi/strimzi-kafka-operator/raw/0.19.0/examples/connect/kafka-connect-s2i-single-node-kafka.yaml
-----
-
-=== Extend Kafka Connect with Debezium Binaries: 
-
-** `Source-to-Image` (S2I):
-
-[source, bash,indent=0]
-----
-export DEBEZIUM_VERSION=1.2.0.Final
-mkdir -p plugins && cd plugins && \
-for PLUGIN in {mongodb,mysql,postgres}; do \
-    curl https://repo1.maven.org/maven2/io/debezium/debezium-connector-$PLUGIN/$DEBEZIUM_VERSION/debezium-connector-$PLUGIN-$DEBEZIUM_VERSION-plugin.tar.gz | tar xz; \
-done && \
-oc start-build my-connect-cluster-connect --from-dir=. --follow && \
-cd .. && rm -rf plugins
-----
-
-** `Docker`:
-
-[source, shell,indent=0]
-----
-export IMG_NAME="debezium-connect"
-export DEBEZIUM_VERSION=1.2.0.Final
-
-mkdir -p plugins && cd plugins && \
-for PLUGIN in {mongodb,mysql,postgres}; do \
-    curl https://repo1.maven.org/maven2/io/debezium/debezium-connector-$PLUGIN/$DEBEZIUM_VERSION/debezium-connector-$PLUGIN-$DEBEZIUM_VERSION-plugin.tar.gz | tar xz; \
-done
-cd ..
-cat <<EOF > Dockerfile
-FROM strimzi/kafka:0.19.0-kafka-2.5.0
-USER root:root
-COPY ./plugins/ /opt/kafka/plugins/
-USER 1001
-EOF
-
-oc new-build --binary --name=$IMG_NAME -l app=$IMG_NAME
-oc patch bc/$IMG_NAME -p '{"spec":{"strategy":{"dockerStrategy":{"dockerfilePath":"Dockerfile"}}}}'
-oc start-build $IMG_NAME --from-dir=. --follow
-
-oc create -f - <<EOF
-apiVersion: kafka.strimzi.io/v1beta1
-kind: KafkaConnect
-metadata:
-  name: $IMG_NAME
-  annotations:
-    strimzi.io/use-connector-resources: "true"
-spec:
-  replicas: 1
-  version: 2.5.0
-  image: "image-registry.openshift-image-registry.svc:5000/myproject/$IMG_NAME"
-  bootstrapServers: my-cluster-kafka-bootstrap:9093
-  tls:
-    trustedCertificates:
-      - secretName: my-cluster-cluster-ca-cert
-        certificate: ca.crt
-EOF
-rm -rf plugins && rm Dockerfile
-----
-////
 
 == Commands
 
@@ -247,7 +145,7 @@ A Kafka Connect service has a RESTful API for managing and deploying connectors;
 [source, shell,indent=0]
 ----
 export DEBEZIUM_CONNECT_SVC=my-connect-cluster-connect-api
-# choose the kafka connect service by running oc get svc -l app.kubernetes.io/name=kafka-connect -o json | jq -r '.items[] | .metadata.name'
+# choose the kafka connect service by running `oc get kc dbz-mysql-connect -o yaml | yq '.status.url'`
 export CONNECTOR=inventory-connector
 ----
 
@@ -615,3 +513,80 @@ Revert the log level back to `INFO` as follows:
 export KAFKA_CONNECT_POD=my-connect-cluster-connect-2-hns52
 oc exec -it $KAFKA_CONNECT_POD -- curl -s -X PUT -H "Content-Type:application/json"  http://localhost:8083/admin/loggers/io.debezium -d '{"level": "INFO"}'
 ----
+
+////
+== Deployment
+
+Debezium is based on Apache Kafka and Kafka Connect, and can be run on `Kubernetes` and `OpenShift` via the https://strimzi.io[Strimzi] project. `Strimzi` provides a set of operators and container images for running Kafka on Kubernetes and OpenShift. 
+
+=== Deploy Kafka & Kafka Connect
+
+[source, shell,indent=0]
+----
+oc new-project myproject
+# install the Strimzi operator 
+oc apply -f https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.19.0/strimzi-cluster-operator-0.19.0.yaml
+# Deploy a single node Kafka broker
+oc apply -f https://github.com/strimzi/strimzi-kafka-operator/raw/0.19.0/examples/kafka/kafka-persistent-single.yaml
+# Deploy a single instance of Kafka Connect with no plug-in installed
+oc apply -f https://github.com/strimzi/strimzi-kafka-operator/raw/0.19.0/examples/connect/kafka-connect-s2i-single-node-kafka.yaml
+----
+
+=== Extend Kafka Connect with Debezium Binaries: 
+
+** `Source-to-Image` (S2I):
+
+[source, bash,indent=0]
+----
+export DEBEZIUM_VERSION=1.2.0.Final
+mkdir -p plugins && cd plugins && \
+for PLUGIN in {mongodb,mysql,postgres}; do \
+    curl https://repo1.maven.org/maven2/io/debezium/debezium-connector-$PLUGIN/$DEBEZIUM_VERSION/debezium-connector-$PLUGIN-$DEBEZIUM_VERSION-plugin.tar.gz | tar xz; \
+done && \
+oc start-build my-connect-cluster-connect --from-dir=. --follow && \
+cd .. && rm -rf plugins
+----
+
+** `Docker`:
+
+[source, shell,indent=0]
+----
+export IMG_NAME="debezium-connect"
+export DEBEZIUM_VERSION=1.2.0.Final
+
+mkdir -p plugins && cd plugins && \
+for PLUGIN in {mongodb,mysql,postgres}; do \
+    curl https://repo1.maven.org/maven2/io/debezium/debezium-connector-$PLUGIN/$DEBEZIUM_VERSION/debezium-connector-$PLUGIN-$DEBEZIUM_VERSION-plugin.tar.gz | tar xz; \
+done
+cd ..
+cat <<EOF > Dockerfile
+FROM strimzi/kafka:0.19.0-kafka-2.5.0
+USER root:root
+COPY ./plugins/ /opt/kafka/plugins/
+USER 1001
+EOF
+
+oc new-build --binary --name=$IMG_NAME -l app=$IMG_NAME
+oc patch bc/$IMG_NAME -p '{"spec":{"strategy":{"dockerStrategy":{"dockerfilePath":"Dockerfile"}}}}'
+oc start-build $IMG_NAME --from-dir=. --follow
+
+oc create -f - <<EOF
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaConnect
+metadata:
+  name: $IMG_NAME
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  replicas: 1
+  version: 2.5.0
+  image: "image-registry.openshift-image-registry.svc:5000/myproject/$IMG_NAME"
+  bootstrapServers: my-cluster-kafka-bootstrap:9093
+  tls:
+    trustedCertificates:
+      - secretName: my-cluster-cluster-ca-cert
+        certificate: ca.crt
+EOF
+rm -rf plugins && rm Dockerfile
+----
+////
