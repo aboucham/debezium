@@ -240,6 +240,7 @@ Accept:application/json
 ["inventory-connector"]
 ----
 
+////
 === Create Debezium Connector
 
 ** Using RESTful API
@@ -333,8 +334,27 @@ Update the Debezium connector `CR`
 `oc delete kctr/inventory-connector`::
 delete the Debezium connector `CR`
 ====
+////
 
 === Get connector configuration
+
+==== Command line
+
+[source, yaml,indent=0]
+----
+$ oc get kctr mysql-connector -o yaml | yq '.status.connectorStatus'
+connector:
+  state: RUNNING
+  worker_id: 10.131.0.22:8083
+name: mysql-connector
+tasks:
+  - id: 0
+    state: RUNNING
+    worker_id: 10.131.0.22:8083
+type: source
+----
+
+==== Rest API
 
 [cols="35,65"]
 |===
