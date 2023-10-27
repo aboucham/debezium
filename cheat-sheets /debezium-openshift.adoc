@@ -450,7 +450,15 @@ Accept:application/json
 ----
 
 === Restart connector
+==== Command line
 
+[source, shell,indent=0]
+----
+$ oc annotate kctr mysql-connector strimzi.io/restart=true
+kafkaconnector.kafka.strimzi.io/mysql-connector annotated
+----
+
+==== Rest API
 [cols="35,65"]
 |===
 
