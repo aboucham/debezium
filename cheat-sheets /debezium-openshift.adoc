@@ -484,6 +484,30 @@ Accept:application/json
 ----
 
 === Pause connector
+==== Command line
+
+[source, shell,indent=0]
+----
+$ oc patch kctr mysql-connector --patch '{"spec":{"pause": true}}' --type=merge
+kafkaconnector.kafka.strimzi.io/mysql-connector patched
+----
+
+** Check:
+
+[source, shell,indent=0]
+ oc get kctr mysql-connector -o yaml | yq '.status.connectorStatus'
+connector:
+  state: PAUSED
+  worker_id: 10.131.0.29:8083
+name: mysql-connector
+tasks:
+  - id: 0
+    state: PAUSED
+    worker_id: 10.131.0.29:8083
+type: source
+----
+
+==== Rest API
 
 [cols="35,65"]
 |===
