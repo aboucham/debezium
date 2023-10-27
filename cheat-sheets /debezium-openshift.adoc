@@ -594,7 +594,6 @@ Accept:application/json
 ----
 
 TIP: Starting from AMQ Streams 2.6 (strimzi 0.28) `pause` property will be replace by `state`. That new property will accept the `paused`, `stopped` or `running` values:
-
 [source, shell,indent=0]
 ----
 oc patch kctr mysql-connector --patch '{"spec":{"state": paused}}' --type=merge
