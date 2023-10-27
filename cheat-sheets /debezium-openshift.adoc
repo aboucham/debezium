@@ -494,6 +494,8 @@ kafkaconnector.kafka.strimzi.io/mysql-connector patched
 
 ** Check:
 
+[source, yaml,indent=0]
+----
 [source, shell,indent=0]
  oc get kctr mysql-connector -o yaml | yq '.status.connectorStatus'
 connector:
