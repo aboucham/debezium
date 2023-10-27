@@ -124,6 +124,7 @@ EOF
 ----
 === Deploying Connectors:
 
+- have a look to <<f../examples/debezium-mysql.md#title,document 2>>
 - [Debezium MySql Connector](../examples/debezium-mysql.md)
 - [Debezium Postgress Connector](../examples/debezium-mysql.md)
 - [Debezium MongoDB Connector](../examples/debezium-mysql.md)
