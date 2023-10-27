@@ -17,6 +17,10 @@ image::debezium-architecture.png[I am the image alt text.]
 
 == Install AMQ Streams Cluster:
 
+- Use AMQ Streams to build a Kafka Connect container image that includes the connector plug-ins.
+- Create custom resources (CRs) including KafkaConnect and KafkaConnector to configure and deploy connectors.
+- Ensure necessary permissions and prerequisites are met, including access to an OpenShift cluster, running AMQ Streams Operator, deployed Apache Kafka cluster, and a Red Hat build of Debezium license.
+
 AMQ Streams CR:
 
 [source, yaml,indent=0]
