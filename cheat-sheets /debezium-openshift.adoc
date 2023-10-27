@@ -124,8 +124,8 @@ EOF
 ----
 === Deploying Connectors:
 
-- have a look to <<../examples/debezium-mysql.md#Debezium MySql Connector,debezium-mysql.md>>
-- [Debezium MySql Connector](../examples/debezium-mysql.md)
+- have a look to <<https://github.com/aboucham/debezium/blob/main/examples/debezium-mysql.md#Debezium MySql Connector,debezium-mysql.md>>
+- [Debezium MySql Connector](https://github.com/aboucham/debezium/blob/main/examples/debezium-mysql.md)
 - [Debezium Postgress Connector](../examples/debezium-mysql.md)
 - [Debezium MongoDB Connector](../examples/debezium-mysql.md)
 
