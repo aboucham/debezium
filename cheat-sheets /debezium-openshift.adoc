@@ -117,6 +117,41 @@ spec:
 EOF
 ----
 
+Check Status:
+
+[source, yaml,indent=0]
+----
+status:
+  conditions:
+    - lastTransitionTime: '2023-10-24T10:17:25.282337453Z'
+      status: 'True'
+      type: Ready
+  connectorPlugins:
+    - class: io.debezium.connector.mongodb.MongoDbConnector
+      type: source
+      version: 2.4.0.Final
+    - class: io.debezium.connector.mysql.MySqlConnector
+      type: source
+      version: 2.4.0.Final
+    - class: io.debezium.connector.postgresql.PostgresConnector
+      type: source
+      version: 2.4.0.Final
+    - class: org.apache.kafka.connect.mirror.MirrorCheckpointConnector
+      type: source
+      version: 3.5.0.redhat-00014
+    - class: org.apache.kafka.connect.mirror.MirrorHeartbeatConnector
+      type: source
+      version: 3.5.0.redhat-00014
+    - class: org.apache.kafka.connect.mirror.MirrorSourceConnector
+      type: source
+      version: 3.5.0.redhat-00014
+  labelSelector: >-
+    strimzi.io/cluster=dbz-mysql-connect,strimzi.io/name=dbz-mysql-connect-connect,strimzi.io/kind=KafkaConnect
+  observedGeneration: 1
+  replicas: 1
+  url: 'http://dbz-mysql-connect-connect-api.dbz-mysql.svc:8083'
+----
+
 == Deployment
 
 Debezium is based on Apache Kafka and Kafka Connect, and can be run on `Kubernetes` and `OpenShift` via the https://strimzi.io[Strimzi] project. `Strimzi` provides a set of operators and container images for running Kafka on Kubernetes and OpenShift. 
