@@ -124,7 +124,7 @@ EOF
 ----
 === Deploying Connectors:
 
-- [Debezium MySql Connector](https://github.com/aboucham/debezium/blob/main/examples/debezium-mysql.md)
+- https://github.com/aboucham/debezium/blob/main/examples/debezium-mysql.md[Debezium MySql Connector]
 - [Debezium Postgress Connector](../examples/debezium-mysql.md)
 - [Debezium MongoDB Connector](../examples/debezium-mysql.md)
 
@@ -591,6 +591,15 @@ oc exec -i my-cluster-kafka-0 -- curl -X DELETE \
 ----
 HTTP/1.1 204 No Content
 Accept:application/json
+----
+
+TIP: Starting from AMQ Streams 2.6 (strimzi 0.28) `pause` property will be replace by `state`. That new property will accept the `paused`, `stopped` or `running` values:
+
+[source, shell,indent=0]
+----
+oc patch kctr mysql-connector --patch '{"spec":{"state": paused}}' --type=merge
+oc patch kctr mysql-connector --patch '{"spec":{"state": stopped}}' --type=merge
+oc patch kctr mysql-connector --patch '{"spec":{"state": running}}' --type=merge
 ----
 
 == Logs
