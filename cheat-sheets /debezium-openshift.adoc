@@ -69,8 +69,10 @@ spec:
 EOF
 ----
 
-
 == Install Kafka connect CR with Debezium plugins through AMQ Streams:
+== Building and Deploying Debezium Connectors:
+
+- Create a KafkaConnect CR specifying connector plugins and other components.
 
 [source, yaml,indent=0]
 ----
