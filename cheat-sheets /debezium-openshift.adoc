@@ -502,7 +502,7 @@ kafkaconnector.kafka.strimzi.io/mysql-connector annotated
 |===
 
 |`POST /connectors/{connector-name}/tasks/{task-id}/restart`
-|Restart the connector.
+|Restart the connector/task.
 
 |===
 
