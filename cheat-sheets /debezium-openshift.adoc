@@ -488,6 +488,40 @@ HTTP/1.1 204 No Content
 Accept:application/json
 ----
 
+=== Restart the connector/task
+==== Command line
+
+[source, shell,indent=0]
+----
+$ oc annotate kctr mysql-connector strimzi.io/restart-task=0
+kafkaconnector.kafka.strimzi.io/mysql-connector annotated
+----
+
+==== Rest API
+[cols="35,65"]
+|===
+
+|`POST /connectors/{connector-name}/tasks/{task-id}/restart`
+|Restart the connector.
+
+|===
+
+** request:
+[source, shell,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X POST \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://$DEBEZIUM_CONNECT_SVC:8083/connectors/$CONNECTOR/tasks/0/restart
+----
+
+** response:
+[source,json,subs="attributes+"]
+----
+HTTP/1.1 204 No Content
+Accept:application/json
+----
+
 === Pause connector
 ==== Command line
 
