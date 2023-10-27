@@ -204,6 +204,17 @@ Accept:application/json
 
 === Get all connectors:
 
+==== Command line
+
+[source, shell,indent=0]
+----
+$ oc get kctr
+NAME              CLUSTER             CONNECTOR CLASS                              MAX TASKS   READY
+mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector   1           True
+----
+
+==== Rest API
+
 [cols="35,65"]
 |===
 
