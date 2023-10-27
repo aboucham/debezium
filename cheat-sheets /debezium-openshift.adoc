@@ -124,9 +124,9 @@ EOF
 ----
 === Deploying Connectors:
 
-- https://github.com/aboucham/debezium/blob/main/examples/debezium-mysql.md[Debezium MySql Connector]
-- [Debezium Postgress Connector](../examples/debezium-mysql.md)
-- [Debezium MongoDB Connector](../examples/debezium-mysql.md)
+- https://github.com/aboucham/debezium/blob/main/examples/mysql-debezium.md[Debezium MySql Connector]
+- https://github.com/aboucham/debezium/blob/main/examples/postgress-debezium.md[Debezium Postgress Connector]
+- https://github.com/aboucham/debezium/blob/main/examples/mongodb-debezium.md[Debezium MongoDB Connector]
 
 === Check Status:
 === Verify Connector Status:
