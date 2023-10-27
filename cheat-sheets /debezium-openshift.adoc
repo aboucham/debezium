@@ -162,6 +162,7 @@ status:
   url: 'http://dbz-mysql-connect-connect-api.dbz-mysql.svc:8083'
 ----
 
+////
 == Deployment
 
 Debezium is based on Apache Kafka and Kafka Connect, and can be run on `Kubernetes` and `OpenShift` via the https://strimzi.io[Strimzi] project. `Strimzi` provides a set of operators and container images for running Kafka on Kubernetes and OpenShift. 
@@ -236,6 +237,7 @@ spec:
 EOF
 rm -rf plugins && rm Dockerfile
 ----
+////
 
 == Commands
 
