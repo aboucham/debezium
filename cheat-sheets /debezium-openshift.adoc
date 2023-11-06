@@ -136,7 +136,7 @@ Ensure Type and Status columns are set to Ready and True.
 
 [source, yaml,indent=0]
 ----
-$ oc get kc dbz-mysql-connect -o yaml | yq '.status.conditions'
+$ oc get kc debezium-connect -o yaml | yq '.status.conditions'
 - lastTransitionTime: '2023-10-27T14:16:39.189901299Z'
   status: 'True'
   type: Ready
@@ -160,7 +160,7 @@ export CONNECTOR=inventory-connector
 
 [source, yaml,indent=0]
 ----
-oc get kc dbz-mysql-connect -o yaml | yq '.status.connectorPlugins'
+oc get kc debezium-connect -o yaml | yq '.status.connectorPlugins'
 - class: io.debezium.connector.mongodb.MongoDbConnector
   type: source
   version: 2.4.0.Final
