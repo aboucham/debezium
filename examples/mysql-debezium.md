@@ -39,7 +39,7 @@ oc create -f - <<EOF
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnect
 metadata:
-  name: dbz-mysql-connect
+  name: debezium-connect
   annotations:
     strimzi.io/use-connector-resources: "true"
 spec:
@@ -97,7 +97,7 @@ apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
 metadata:
   labels:
-    strimzi.io/cluster: dbz-mysql-connect
+    strimzi.io/cluster: debezium-connect
   name: mysql-connector
 spec:
   class: io.debezium.connector.mysql.MySqlConnector
