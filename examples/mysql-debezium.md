@@ -85,7 +85,7 @@ EOF
 ## Check
 
 ```
-oc get kc dbz-mysql-connect -o yaml | yq e 'status.connectorPlugins'
+oc get kc debezium-connect -o yaml | yq '.status.connectorPlugins'
 ```
 
 ## kafka Connector CR:
@@ -129,7 +129,7 @@ NAME              CLUSTER             CONNECTOR CLASS                           
 mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector   1           True
 ```
 ```
-oc get kctr mysql-connector -o yaml | yq read - 'status'
+oc get kctr mysql-connector -o yaml | yq '.status'
 
 status:
   conditions:
