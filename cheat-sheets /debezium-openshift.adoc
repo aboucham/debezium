@@ -122,11 +122,6 @@ spec:
   version: 3.5.0
 EOF
 ----
-=== Deploying Connectors:
-
-- https://github.com/aboucham/debezium/blob/main/examples/mysql-debezium.md[Debezium MySql Connector]
-- https://github.com/aboucham/debezium/blob/main/examples/postgress-debezium.md[Debezium Postgress Connector]
-- https://github.com/aboucham/debezium/blob/main/examples/mongodb-debezium.md[Debezium MongoDB Connector]
 
 === Check Status:
 === Verify Connector Status:
