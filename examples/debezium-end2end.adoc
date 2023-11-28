@@ -322,7 +322,7 @@ spec:
     ref:
       kind: KafkaTopic
       apiVersion: kafka.strimzi.io/v1beta1
-      name: my-topic
+      name: mysql.inventory.customers
   sink:
     ref:
       apiVersion: camel.apache.org/v1alpha1
@@ -349,7 +349,7 @@ spec:
     properties:
       bootstrapServers: "my-cluster-kafka-bootstrap:9092"
       password: "testpassword"
-      topic: "test-topic"
+      topic: "mysql.inventory.customers"
       user: "test-user"
       securityProtocol: "PLAINTEXT"
   sink:
