@@ -9,7 +9,7 @@ Prerequisties:
 -  Install the AMQ Streams Operator from OperatorHub
 -  Install the camelk Operator from OperatorHub
 
-1. Create namespaces myproject, myproject2 and myproject3
+1. Create namespaces dbz-mysql: `oc new-project dbz-mysql`
 2. Created the following Kafka clusters
 
 [source, yaml,indent=0]
