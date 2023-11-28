@@ -222,19 +222,25 @@ status:
   - mysql.inventory.products
 ----
 
-- Remove Schema 
+- Remove Schema to the Kafka Connector `mysql-connector`
 
 [source, yaml,indent=0]
 ----
-oc patch kctr mysql-connector-p '{"spec": {"config": {"key.converter": org.apache.kafka.connect.json.JsonConverter,"key.converter.schemas.enable": false,"value.converter": org.apache.kafka.connect.json.JsonConverter, "value.converter.schemas.enable": false}}}'
+    key.converter: 'org.apache.kafka.connect.json.JsonConverter'
+    key.converter.schemas.enable: false
+    value.converter: 'org.apache.kafka.connect.json.JsonConverter'
+    value.converter.schemas.enable: false
 ----
 
 
-- Remove Header
+- Remove Header to the Kafka Connector `mysql-connector`
 
 [source, yaml,indent=0]
 ----
-oc patch kctr mysql-connector-p '{"spec": {"config": {"transforms": unwrap,"transforms.unwrap.operation.header": true,"transforms.unwrap.drop.tombstones": false, "transforms.unwrap.type": io.debezium.transforms.ExtractNewRecordState}}}'
+    transforms: unwrap
+    transforms.unwrap.operation.header: true
+    transforms.unwrap.drop.tombstones: false
+    transforms.unwrap.type: io.debezium.transforms.ExtractNewRecordState
 ----
 
 - Add signal configuration and trigger ad hoc snapshot:
