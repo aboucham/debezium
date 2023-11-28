@@ -222,5 +222,78 @@ status:
   - mysql.inventory.products
 ----
 
+- Remove Schema 
+
+[source, yaml,indent=0]
+----
+oc patch kctr mysql-connector-p '{"spec": {"config": {"key.converter": org.apache.kafka.connect.json.JsonConverter,"key.converter.schemas.enable": false,"value.converter": org.apache.kafka.connect.json.JsonConverter, "value.converter.schemas.enable": false}}}'
+----
 
 
+- Remove Header
+
+[source, yaml,indent=0]
+----
+oc patch kctr mysql-connector-p '{"spec": {"config": {"transforms": unwrap,"transforms.unwrap.operation.header": true,"transforms.unwrap.drop.tombstones": false, "transforms.unwrap.type": io.debezium.transforms.ExtractNewRecordState}}}'
+----
+
+- Add signal configuration and trigger ad hoc snapshot:
+
+#### Signal ;;;
+
+[source, yaml,indent=0]
+----
+oc rsh `oc get pods -l deployment=mysql -o name` mysql -u mysqluser -pmysqlpw inventory
+----
+
+The following example shows a CREATE TABLE command that creates a three-column debezium_signal table:
+
+[source, yaml,indent=0]
+----
+CREATE TABLE debezium_signal (id VARCHAR(42) PRIMARY KEY, type VARCHAR(32) NOT NULL, data VARCHAR(2048) NULL);
+
+oc rsh `oc get pods -l deployment=mysql -o name` mysql -u mysqluser -pmysqlpw inventory
+
+CREATE TABLE customers (
+  id SERIAL,
+  first_name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  PRIMARY KEY(id)
+);
+
+
+INSERT INTO customers VALUES (1, 'Test1', 'TEST1', 'test@test.com');
+INSERT INTO customers VALUES (2, 'Test2', 'TEST2', 'test@test.com');
+INSERT INTO customers VALUES (3, 'Test2', 'TEST3', 'test@test.com');
+----
+
+- Add to kafka Connector CR:
+
+    signal.kafka.topic: mysql.debezium_signal
+    signal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
+    signal.enabled.channels: 'source,kafka,jmx'
+    signal.data.collection: inventory.debezium_signal
+
+LOGS:
+
+[source, yaml,indent=0]
+----
+dbz-mysql-connect-connect-746b688cbb-p2xvf dbz-mysql-connect-connect 2023-10-25 08:23:03,638 WARN [mysql-connector|task-0] [Consumer clientId=e79dab95-01b5-41d2-ad70-4662e56fa6a6, groupId=kafka-signal] Error while fetching metadata with correlation id 1 : {mysql.debezium_signal=LEADER_NOT_AVAILABLE} (org.apache.kafka.clients.NetworkClient) [debezium-mysqlconnector-mysql-SignalProcessor]
+dbz-mysql-connect-connect-746b688cbb-p2xvf dbz-mysql-connect-connect 2023-10-25 08:23:03,638 INFO [mysql-connector|task-0] [Consumer clientId=e79dab95-01b5-41d2-ad70-4662e56fa6a6, groupId=kafka-signal] Cluster ID: DO1r2ddtQNKzZwOKSJnGhg (org.apache.kafka.clients.Metadata) [debezium-mysqlconnector-mysql-SignalProcessor]
+dbz-mysql-connect-connect-746b688cbb-p2xvf dbz-mysql-connect-connect 2023-10-25 08:23:03,640 INFO [mysql-connector|task-0] [Consumer clientId=e79dab95-01b5-41d2-ad70-4662e56fa6a6, groupId=kafka-signal] Discovered group coordinator my-cluster-kafka-0.my-cluster-kafka-brokers.dbz-mysql.svc:9092 (id: 2147483647 rack: null) (org.apache.kafka.clients.consumer.internals.ConsumerCoordinator) [debezium-mysqlconnector-mysql-SignalProcessor]
+dbz-mysql-connect-connect-746b688cbb-p2xvf dbz-mysql-connect-connect 2023-10-25 08:23:03,645 INFO [mysql-connector|task-0] [Consumer clientId=e79dab95-01b5-41d2-ad70-4662e56fa6a6, groupId=kafka-signal] Found no committed offset for partition mysql.debezium_signal-0 (org.apache.kafka.clients.consumer.internals.ConsumerCoordinator) [debezium-mysqlconnector-mysql-SignalProcessor]
+----
+
+## Trigger Snapshot:
+
+[source, yaml,indent=0]
+----
+#!/usr/bin/env bash
+STRIMZI_IMAGE="registry.redhat.io/amq7/amq-streams-kafka-32-rhel8:2.2.0"
+krun() { kubectl run krun-"$(date +%s)" -it --rm --restart="Never" --image="$STRIMZI_IMAGE" -- "$@"; }
+
+krun bin/kafka-console-producer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic mysql.debezium_signal --property parse.key=true --property key.separator=:
+
+mysql:{"type":"execute-snapshot","data": {"data-collections": ["inventory.customers"], "type": "INCREMENTAL"}}
+----
