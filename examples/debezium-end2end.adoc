@@ -241,6 +241,7 @@ status:
     transforms.unwrap.operation.header: true
     transforms.unwrap.drop.tombstones: false
     transforms.unwrap.type: io.debezium.transforms.ExtractNewRecordState
+
 ----
 
 - Add signal configuration and trigger ad hoc snapshot:
