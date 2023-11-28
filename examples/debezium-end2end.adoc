@@ -317,7 +317,6 @@ kind: KameletBinding
 apiVersion: camel.apache.org/v1alpha1
 metadata:
   name: my-topic-to-log
-  namespace: camel
 spec:
   source:
     ref:
@@ -340,7 +339,7 @@ oc create -f - <<EOF
 apiVersion: camel.apache.org/v1alpha1
 kind: KameletBinding
 metadata:
-  name: kafkatopic-to-adls
+  name: kafkatopic-to-log
 spec:
   source:
     ref:
