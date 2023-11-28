@@ -312,6 +312,7 @@ mysql:{"type":"execute-snapshot","data": {"data-collections": ["inventory.custom
 
 [source, yaml,indent=0]
 ----
+oc create -f - <<EOF
 kind: KameletBinding
 apiVersion: camel.apache.org/v1alpha1
 metadata:
@@ -328,12 +329,14 @@ spec:
       apiVersion: camel.apache.org/v1alpha1
       kind: Kamelet
       name: log-sink
+EOF
 ----
 
 Different namespace:
 
 [source, yaml,indent=0]
 ----
+oc create -f - <<EOF
 apiVersion: camel.apache.org/v1alpha1
 kind: KameletBinding
 metadata:
@@ -355,4 +358,5 @@ spec:
       apiVersion: camel.apache.org/v1alpha1
       kind: Kamelet
       name: log-sink
+EOF
 ----
