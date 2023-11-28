@@ -297,3 +297,28 @@ krun bin/kafka-console-producer.sh --bootstrap-server my-cluster-kafka-bootstrap
 
 mysql:{"type":"execute-snapshot","data": {"data-collections": ["inventory.customers"], "type": "INCREMENTAL"}}
 ----
+
+
+## Camelk: Deploy kamelet
+
+##### my topic to log. my-topic CR created in the same namespace as camel k
+
+[source, yaml,indent=0]
+----
+kind: KameletBinding
+apiVersion: camel.apache.org/v1alpha1
+metadata:
+  name: my-topic-to-log
+  namespace: camel
+spec:
+  source:
+    ref:
+      kind: KafkaTopic
+      apiVersion: kafka.strimzi.io/v1beta1
+      name: my-topic
+  sink:
+    ref:
+      apiVersion: camel.apache.org/v1alpha1
+      kind: Kamelet
+      name: log-sink
+----
