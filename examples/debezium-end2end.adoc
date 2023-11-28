@@ -64,87 +64,6 @@ Prerequisties:
 
 [source, yaml,indent=0]
 ----
-    oc create -f - <<EOF
-    apiVersion: kafka.strimzi.io/v1beta2
-    kind: KafkaConnect
-    metadata:
-      annotations:
-        strimzi.io/use-connector-resources: 'true'
-      name: debezium-connect
-    spec:
-      bootstrapServers: 'my-cluster-kafka-bootstrap:9093'
-      build:
-        output:
-          image: >-
-            image-registry.openshift-image-registry.svc:5000/debezium/debezium-connect:latest
-          type: docker
-        plugins:
-          - artifacts:
-              - type: tgz
-                url: >-
-                  https://repo1.maven.org/maven2/io/debezium/debezium-connector-mongodb/2.4.0.Final/debezium-connector-mongodb-2.4.0.Final-plugin.tar.gz
-            name: debezium-mongodb-connector
-          - artifacts:
-              - type: tgz
-                url: >-
-                  https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/2.4.0.Final/debezium-connector-postgres-2.4.0.Final-plugin.tar.gz
-            name: debezium-postgres-connector
-          - artifacts:
-              - type: tgz
-                url: >-
-                  https://repo1.maven.org/maven2/io/debezium/debezium-connector-mysql/2.4.0.Final/debezium-connector-mysql-2.4.0.Final-plugin.tar.gz
-            name: debezium-mysql-connector
-      config:
-        config.storage.replication.factor: -1
-        config.storage.topic: debezium-connect-configs
-        group.id: debezium-connect
-        offset.storage.replication.factor: -1
-        offset.storage.topic: debezium-connect-offsets
-        status.storage.replication.factor: -1
-        status.storage.topic: debezium-connect-status
-      replicas: 1
-      tls:
-        trustedCertificates:
-          - certificate: ca.crt
-            secretName: my-cluster-cluster-ca-cert
-      version: 3.5.0
-    EOF
-----
-
-3. Deploy pre-populated MySQL instance
-
-## Configure credentials for the database:
-
-----
-oc new-app \
-    -e MYSQL_ROOT_PASSWORD=debezium \
-    -e MYSQL_USER=mysqluser \
-    -e MYSQL_PASSWORD=mysqlpw \
-    -e MYSQL_DATABASE=inventory \
-    mysql:8.0-el9
-----
-
-----
-oc rsh `oc get pods -l deployment=mysql -o name` mysql -u mysqluser -pmysqlpw inventory
-
-CREATE TABLE products
-(
-    id INT PRIMARY KEY NOT NULL,
-    name VARCHAR(100),
-    model VARCHAR(100),
-    price INT
-);
-
-
-INSERT INTO products VALUES (1, 'LenovoT41', 'Lenovo T 41', 3);
-INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
-INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
-----
-
-## kafka Connect CR - Build - SQL Instances:
-## Kafka connect CR ######
-
-----
 oc create -f - <<EOF
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnect
@@ -194,13 +113,51 @@ EOF
 
 ## Check
 
+[source, yaml,indent=0]
 ----
 oc get kc debezium-connect -o yaml | yq '.status.connectorPlugins'
 ----
 
+3. Deploy pre-populated MySQL instance
+
+## Configure credentials for the database:
+
+[source, yaml,indent=0]
+----
+oc new-app \
+    -e MYSQL_ROOT_PASSWORD=debezium \
+    -e MYSQL_USER=mysqluser \
+    -e MYSQL_PASSWORD=mysqlpw \
+    -e MYSQL_DATABASE=inventory \
+    mysql:8.0-el9
+----
+
+[source, yaml,indent=0]
+----
+oc rsh `oc get pods -l deployment=mysql -o name` mysql -u mysqluser -pmysqlpw inventory
+
+CREATE TABLE products
+(
+    id INT PRIMARY KEY NOT NULL,
+    name VARCHAR(100),
+    model VARCHAR(100),
+    price INT
+);
+
+
+INSERT INTO products VALUES (1, 'LenovoT41', 'Lenovo T 41', 3);
+INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
+INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
+----
+
+## kafka Connect CR - Build - SQL Instances:
+## Kafka connect CR ######
+
+
 ## kafka Connector CR:
 ### Create KC with MYSQL Connector:
 
+[source, yaml,indent=0]
 ----
 oc create -f - <<EOF
 apiVersion: kafka.strimzi.io/v1beta2
@@ -233,11 +190,14 @@ EOF
 
 ## Check Status:
 
+[source, yaml,indent=0]
 ----
 $ oc get kctr
 NAME              CLUSTER             CONNECTOR CLASS                              MAX TASKS   READY
 mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector   1           True
 ----
+
+[source, yaml,indent=0]
 ----
 oc get kctr mysql-connector -o yaml | yq '.status'
 
