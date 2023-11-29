@@ -118,6 +118,11 @@ spec:
 EOF
 ----
 
+TIP: Enable `use-connector-resources` to instantiate Kafka connectors through specific custom resources:
+`oc annotate kafkaconnects2is my-connect-cluster strimzi.io/use-connector-resources=true`
+
+NOTE: Multiple instances attempting to use the same internal topics will cause unexpected errors, so you must change the values of these properties for each instance.
+
 ## Check
 
 [source, yaml,indent=0]
