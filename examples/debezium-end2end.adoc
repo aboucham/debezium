@@ -1,16 +1,22 @@
-Env:
+Title: Real-time Database Streaming with Debezium and AMQ Streams
+Demonstrating the integration of Debezium and AMQ Streams for real-time database streaming using MySQL 8.0.
+
+Environment Setup:
 
 - AMQ Streams 2.5.0
 - Debezium 2.4.0.Final
 - MySQL 8.0
 
-Prerequisties:
+Prerequisites:
 
--  Install the AMQ Streams Operator from OperatorHub
--  Install the camelk Operator from OperatorHub
+- Install AMQ Streams Operator from OperatorHub
+- Install CamelK Operator from OperatorHub
+- Create the 'dbz-mysql' namespace: `oc new-project dbz-mysql`
 
-1. Create namespaces dbz-mysql: `oc new-project dbz-mysql`
-2. Created the following Kafka clusters
+
+1. Kafka Cluster Creation
+
+Create Kafka clusters using Kafka CR YAML configuration
 
 [source, yaml,indent=0]
 ----
@@ -57,10 +63,11 @@ Prerequisties:
         replicas: 3
     EOF
 ----
-    
+
+2. Build and deploy Debezium connectors using KafkaConnect Custom Resource (CR)
+
 - Install Kafka connect CR with Debezium plugins through AMQ Streams:
-- Building and Deploying Debezium Connectors:
-- Create a KafkaConnect CR specifying connector plugins and other components.
+
 
 [source, yaml,indent=0]
 ----
@@ -150,12 +157,7 @@ INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
 INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
 ----
 
-## kafka Connect CR - Build - SQL Instances:
-## Kafka connect CR ######
-
-
-## kafka Connector CR:
-### Create KC with MYSQL Connector:
+- Kafka Connector CR: Create KC with MYSQL Connector:
 
 [source, yaml,indent=0]
 ----
@@ -304,7 +306,6 @@ krun bin/kafka-console-producer.sh --bootstrap-server my-cluster-kafka-bootstrap
 
 mysql:{"type":"execute-snapshot","data": {"data-collections": ["inventory.customers"], "type": "INCREMENTAL"}}
 ----
-
 
 ## Camelk: Deploy kamelet
 
