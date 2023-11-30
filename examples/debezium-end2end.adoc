@@ -256,14 +256,11 @@ status:
 [source, yaml,indent=0]
 ----
     key.converter: io.apicurio.registry.utils.converter.ExtJsonConverter
-    key.converter.apicurio.registry.url: http://apicurio:8080
-    key.converter.apicurio.registry.global-id:
-    io.apicurio.registry.utils.serde.strategy.GetOrCreateIdStrategy
-
+    key.converter.apicurio.registry.url: http://apicurioregistry-psql
+    key.converter.apicurio.registry.global-id: io.apicurio.registry.utils.serde.strategy.GetOrCreateIdStrategy
     value.converter: io.apicurio.registry.utils.converter.ExtJsonConverter
-    value.converter.apicurio.registry.url: http://apicurio:8080
-    value.converter.apicurio.registry.global-id:
-    io.apicurio.registry.utils.serde.strategy.GetOrCreateIdStrategy
+    value.converter.apicurio.registry.url: http://apicurioregistry-psql
+    value.converter.apicurio.registry.global-id: io.apicurio.registry.utils.serde.strategy.GetOrCreateIdStrategy
 ----
 
 - Add signal configuration and trigger ad hoc snapshot:
