@@ -253,14 +253,24 @@ status:
 
 - Managing schema with ApiCurio Registry:
 
+Install ApiCurio Registry Operator
+Deploy the postgres database
+Deploy the CR
+
+Get the servie url:
+
+
+Add the following lines to the kafkaConnector CR:
 [source, yaml,indent=0]
 ----
     key.converter: io.apicurio.registry.utils.converter.ExtJsonConverter
-    key.converter.apicurio.registry.url: http://apicurioregistry-psql
-    key.converter.apicurio.registry.global-id: io.apicurio.registry.utils.serde.strategy.GetOrCreateIdStrategy
+    key.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
+    key.converter.apicurio.registry.auto-register: true
+    key.converter.apicurio.registry.find-latest: true
     value.converter: io.apicurio.registry.utils.converter.ExtJsonConverter
-    value.converter.apicurio.registry.url: http://apicurioregistry-psql
-    value.converter.apicurio.registry.global-id: io.apicurio.registry.utils.serde.strategy.GetOrCreateIdStrategy
+    value.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
+    value.converter.apicurio.registry.auto-register: true
+    value.converter.apicurio.registry.find-latest: true
 ----
 
 - Add signal configuration and trigger ad hoc snapshot:
