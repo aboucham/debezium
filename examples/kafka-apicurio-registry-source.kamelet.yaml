@@ -143,7 +143,5 @@ spec:
         brokers: '{{bootstrapServers}}'
         groupId: '{{?consumerGroup}}'
       steps:
-        - process:
-            ref: '{{kafkaHeaderDeserializer}}'
         - to: 'kamelet:sink'
       uri: 'kafka:{{topic}}'
