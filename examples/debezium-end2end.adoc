@@ -387,3 +387,30 @@ spec:
       name: log-sink
 EOF
 ----
+- Kamelet with ApiCurio Registry Jsonschema handling:
+
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: camel.apache.org/v1alpha1
+kind: KameletBinding
+metadata:
+  name: kafkatopic-apicurio-registry-log
+spec:
+  source:
+    ref:
+      kind: Kamelet
+      apiVersion: camel.apache.org/v1alpha1
+      name: kafka-apicurio-registry-not-secured-source
+    properties:
+      bootstrapServers: "my-cluster-kafka-bootstrap:9092"
+      topic: "mysql.inventory.customers"
+      valueDeserializer: "io.apicurio.registry.serde.jsonschema.JsonSchemaKafkaDeserializer"
+      apicurioRegistryUrl: "http://apicurioregistry-psql-service:8080/apis/registry/v2"
+  sink:
+    ref:
+      apiVersion: camel.apache.org/v1alpha1
+      kind: Kamelet
+      name: log-sink
+EOF
+----
