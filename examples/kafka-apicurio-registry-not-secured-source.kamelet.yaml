@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ---------------------------------------------------------------------------
-apiVersion: camel.apache.org/v1
+apiVersion: camel.apache.org/v1alpha1
 kind: Kamelet
 metadata:
   name: kafka-apicurio-registry-not-secured-source
