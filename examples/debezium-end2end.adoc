@@ -401,7 +401,7 @@ spec:
     ref:
       kind: Kamelet
       apiVersion: camel.apache.org/v1alpha1
-      name: kafka-apicurio-registry-not-secured-source
+      name: kafka-apicurio-registry-source
     properties:
       bootstrapServers: "my-cluster-kafka-bootstrap:9092"
       topic: "mysql.inventory.customers"
