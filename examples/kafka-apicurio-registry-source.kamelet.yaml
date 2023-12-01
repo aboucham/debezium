@@ -119,7 +119,7 @@ spec:
     title: Kafka Not Secured with Apicurio Registry Source
     type: object
   dependencies:
-    - 'mvn:org.apache.camel.kamelets:camel-kamelets-utils:4.2.0'
+    - 'mvn:org.apache.camel.kamelets:camel-kamelets-utils:0.9.4'
     - 'camel:kafka'
     - 'camel:core'
     - 'camel:kamelet'
