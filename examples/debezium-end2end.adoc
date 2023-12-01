@@ -405,6 +405,7 @@ spec:
     properties:
       bootstrapServers: "my-cluster-kafka-bootstrap:9092"
       topic: "mysql.inventory.customers"
+      deserializeHeaders: false
       valueDeserializer: "io.apicurio.registry.serde.jsonschema.JsonSchemaKafkaDeserializer"
       apicurioRegistryUrl: "http://apicurioregistry-psql-service:8080/apis/registry/v2"
   sink:
