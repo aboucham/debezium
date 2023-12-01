@@ -260,7 +260,7 @@ Deploy the CR
 Get the servie url:
 
 
-Add the following lines to the kafkaConnector CR:
+Add the following lines to the kafkaConnector CR for json converter:
 [source, yaml,indent=0]
 ----
     key.converter: io.apicurio.registry.utils.converter.ExtJsonConverter
@@ -268,6 +268,19 @@ Add the following lines to the kafkaConnector CR:
     key.converter.apicurio.registry.auto-register: true
     key.converter.apicurio.registry.find-latest: true
     value.converter: io.apicurio.registry.utils.converter.ExtJsonConverter
+    value.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
+    value.converter.apicurio.registry.auto-register: true
+    value.converter.apicurio.registry.find-latest: true
+----
+
+Add the following lines to the kafkaConnector CR for Avro converter:
+[source, yaml,indent=0]
+----
+    key.converter: io.apicurio.registry.utils.converter.AvroConverter
+    key.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
+    key.converter.apicurio.registry.auto-register: true
+    key.converter.apicurio.registry.find-latest: true
+    value.converter: io.apicurio.registry.utils.converter.AvroConverter
     value.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
     value.converter.apicurio.registry.auto-register: true
     value.converter.apicurio.registry.find-latest: true
