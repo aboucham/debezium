@@ -332,7 +332,7 @@ mysql:{"type":"execute-snapshot","data": {"data-collections": ["inventory.custom
 
 ----
 
-- Managing schema with ApiCurio Registry:
+## Managing schema with ApiCurio Registry:
 
 Install ApiCurio Registry Operator
 Deploy the postgres database
