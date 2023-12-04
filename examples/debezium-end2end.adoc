@@ -214,7 +214,10 @@ mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector
 [source, yaml,indent=0]
 ----
 oc get kctr mysql-connector -o yaml | yq '.status'
+----
 
+[source, yaml,indent=0]
+----
 status:
   conditions:
   - lastTransitionTime: "2023-10-24T12:12:59.267139132Z"
