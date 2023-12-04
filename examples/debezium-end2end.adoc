@@ -270,12 +270,21 @@ INSERT INTO customers VALUES (2, 'Test2', 'TEST2', 'test@test.com');
 INSERT INTO customers VALUES (3, 'Test2', 'TEST3', 'test@test.com');
 ----
 
-- Add to kafka Connector CR:
+- Add Signal Config to kafka Connector CR:
 
+[source, yaml,indent=0]
+----
+oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kc-mysql-connector-signal.yaml
+----
+
+[source, yaml,indent=0]
+----
     signal.kafka.topic: mysql.debezium_signal
     signal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
     signal.enabled.channels: 'source,kafka,jmx'
     signal.data.collection: inventory.debezium_signal
+----
+
 
 LOGS:
 
