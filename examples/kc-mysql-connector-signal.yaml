@@ -23,3 +23,7 @@ spec:
     topic.prefix: mysql
     topic.creation.default.replication.factor: 1
     topic.creation.default.partitions: 1
+    signal.kafka.topic: mysql.debezium_signal
+    signal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
+    signal.enabled.channels: 'source,kafka,jmx'
+    signal.data.collection: inventory.debezium_signal
