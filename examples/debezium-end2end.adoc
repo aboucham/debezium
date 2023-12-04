@@ -11,10 +11,12 @@ Prerequisites:
 
 - Install AMQ Streams Operator from OperatorHub
 - Install CamelK Operator from OperatorHub
-- Create the 'dbz-mysql' namespace: `oc new-project dbz-mysql`
+- Install Service Registry Operator 
 
 
 1. Kafka Cluster Creation
+
+Create the 'dbz-mysql' namespace: `oc new-project dbz-mysql`
 
 Create Kafka clusters using Kafka CR YAML configuration
 
