@@ -453,6 +453,11 @@ EOF
 
 [source, yaml,indent=0]
 ----
+oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafka-apicurio-registry-source.kamelet.yaml
+----
+
+[source, yaml,indent=0]
+----
 oc create -f - <<EOF
 apiVersion: camel.apache.org/v1alpha1
 kind: KameletBinding
