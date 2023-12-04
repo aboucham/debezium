@@ -1,4 +1,4 @@
-Title: Real-time Database Streaming with Debezium and AMQ Streams
+# Title: Real-time Database Streaming with Debezium and AMQ Streams
 Demonstrating the integration of Debezium and AMQ Streams for real-time database streaming using MySQL 8.0.
 
 Environment Setup:
@@ -14,7 +14,7 @@ Prerequisites:
 - Install Service Registry Operator 
 
 
-1. Kafka Cluster Creation
+## 1. Kafka Cluster Creation
 
 Create the 'dbz-mysql' namespace: `oc new-project dbz-mysql`
 
@@ -66,7 +66,7 @@ Create Kafka clusters using Kafka CR YAML configuration
     EOF
 ----
 
-2. Build and deploy Debezium connectors using KafkaConnect Custom Resource (CR)
+## 2. Build and deploy Debezium connectors using KafkaConnect Custom Resource (CR)
 
 - Install Kafka connect CR with Debezium plugins through AMQ Streams:
 
@@ -130,16 +130,16 @@ TIP: Enable `use-connector-resources` to instantiate Kafka connectors through sp
 
 NOTE: Multiple instances attempting to use the same internal topics will cause unexpected errors, so you must change the values of these properties for each instance.
 
-## Check
+#### Check
 
 [source, yaml,indent=0]
 ----
 oc get kc debezium-connect -o yaml | yq '.status.connectorPlugins'
 ----
 
-3. Deploy pre-populated MySQL instance
+## 3. Deploy pre-populated MySQL instance
 
-## Configure credentials for the database:
+#### Configure credentials for the database:
 
 [source, yaml,indent=0]
 ----
@@ -169,7 +169,7 @@ INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
 INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
 ----
 
-- Kafka Connector CR: Create KC with MYSQL Connector:
+## - Kafka Connector CR: Create KC with MYSQL Connector:
 
 [source, yaml,indent=0]
 ----
@@ -202,7 +202,7 @@ spec:
 EOF
 ----
 
-## Check Status:
+#### Check Status:
 
 [source, yaml,indent=0]
 ----
