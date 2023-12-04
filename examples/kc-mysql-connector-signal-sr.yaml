@@ -35,3 +35,7 @@ spec:
     value.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
     value.converter.apicurio.registry.auto-register: true
     value.converter.apicurio.registry.find-latest: true
+    transforms: insertAppIdHeader
+    transforms.insertAppIdHeader.type: org.apache.kafka.connect.transforms.InsertHeader
+    transforms.insertAppIdHeader.header: apicurio.value.artifactId
+    transforms.insertAppIdHeader.value.literal: mysql.inventory.customers-value
