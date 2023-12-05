@@ -41,7 +41,7 @@ spec:
           - 'urn:keda:metadata:bootstrapServers'
           - 'urn:keda:required'
       valueDeserializer:
-        default: io.apicurio.registry.serde.jsonschema.JsonSchemaKafkaDeserializer
+        default: org.apache.kafka.common.serialization.StringDeserializer
         description: >-
           Deserializer class for value that implements the Deserializer
           interface.
@@ -124,6 +124,7 @@ spec:
     - 'camel:core'
     - 'camel:kamelet'
     - 'mvn:io.apicurio:apicurio-registry-serdes-jsonschema-serde:2.4.14.Final'
+    - 'mvn:org.apache.kafka:kafka-clients:3.6.0'
   template:
     beans:
       - name: kafkaHeaderDeserializer
