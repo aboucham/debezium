@@ -385,6 +385,10 @@ oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kc
 Add the following lines to the kafkaConnector CR for Avro converter:
 [source, yaml,indent=0]
 ----
+oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kc-mysql-connector-signal-sr-avro.yaml
+----
+[source, yaml,indent=0]
+----
     key.converter: io.apicurio.registry.utils.converter.AvroConverter
     key.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
     key.converter.apicurio.registry.auto-register: true
