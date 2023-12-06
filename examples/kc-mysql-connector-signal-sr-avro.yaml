@@ -1,0 +1,37 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  labels:
+    strimzi.io/cluster: debezium-connect
+  name: mysql-connector
+spec:
+  class: io.debezium.connector.mysql.MySqlConnector
+  tasksMax: 1
+  autoRestart:
+    enabled: true
+  config:
+    database.hostname: mysql
+    database.port: 3306
+    database.user: root
+    database.password: debezium
+    database.server.id: 184057
+    database.whitelist: inventory
+    database.names: inventory
+    include.schema.changes: false
+    schema.history.internal.kafka.topic: schemahistory.fullfillment
+    schema.history.internal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
+    topic.prefix: mysql
+    topic.creation.default.replication.factor: 1
+    topic.creation.default.partitions: 1
+    signal.kafka.topic: mysql.debezium_signal
+    signal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
+    signal.enabled.channels: 'source,kafka,jmx'
+    signal.data.collection: inventory.debezium_signal
+    key.converter: io.apicurio.registry.utils.converter.AvroConverter
+    key.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
+    key.converter.apicurio.registry.auto-register: true
+    key.converter.apicurio.registry.find-latest: true
+    value.converter: io.apicurio.registry.utils.converter.AvroConverter
+    value.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
+    value.converter.apicurio.registry.auto-register: true
+    value.converter.apicurio.registry.find-latest: true
