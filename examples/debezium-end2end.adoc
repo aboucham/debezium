@@ -457,7 +457,7 @@ EOF
 
 [source, yaml,indent=0]
 ----
-oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafka-apicurio-registry-source.kamelet.yaml
+oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafka-apicurio-registry-json-source.kamelet.yaml
 ----
 
 [source, yaml,indent=0]
@@ -482,5 +482,37 @@ spec:
       apiVersion: camel.apache.org/v1alpha1
       kind: Kamelet
       name: log-sink
+EOF
+----
+
+- Kamelet with ApiCurio Registry Avro handling:
+
+[source, yaml,indent=0]
+----
+oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafka-apicurio-registry-avro-source.kamelet.yaml
+----
+
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: camel.apache.org/v1alpha1
+kind: KameletBinding
+metadata:
+  name: kafka-ar-avro-source
+spec:
+  sink:
+    ref:
+      apiVersion: camel.apache.org/v1alpha1
+      kind: Kamelet
+      name: log-sink
+  source:
+    properties:
+      apicurioRegistryUrl: 'http://apicurioregistry-psql-service:8080/apis/registry/v2'
+      bootstrapServers: 'my-cluster-kafka-bootstrap:9092'
+      topic: mysql.inventory.customers
+    ref:
+      apiVersion: camel.apache.org/v1alpha1
+      kind: Kamelet
+      name: kafka-apicurio-registry-avro-source
 EOF
 ----
