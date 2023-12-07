@@ -516,3 +516,11 @@ spec:
       name: kafka-apicurio-registry-avro-source
 EOF
 ----
+
+
+### Logs:
+
+[source, yaml,indent=0]
+----
+kafka-ar-avro-source-58b5d84f44-2vkkr integration 2023-12-07 09:35:07,525 INFO  [info] (Camel (camel-1) thread #1 - KafkaConsumer[mysql.inventory.customers]) Exchange[ExchangePattern: InOnly, BodyType: org.apache.avro.generic.GenericData.Record, Body: {"before": null, "after": {"id": 11, "first_name": "Test11", "last_name": "TEST11", "email": "test@test.com"}, "source": {"version": "2.4.0.Final", "connector": "mysql", "name": "mysql", "ts_ms": 1701941706000, "snapshot": "false", "db": "inventory", "sequence": null, "table": "customers", "server_id": 1, "gtid": null, "file": "binlog.000002", "pos": 7087, "row": 0, "thread": 51, "query": null}, "op": "c", "ts_ms": 1701941706962, "transaction": null}]
+----
