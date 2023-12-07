@@ -368,7 +368,7 @@ oc get svc
 Add the following lines to the kafkaConnector CR for json converter:
 [source, yaml,indent=0]
 ----
-oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kc-mysql-connector-signal-sr.yaml
+oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kc-mysql-connector-signal-sr-json.yaml
 ----
 [source, yaml,indent=0]
 ----
