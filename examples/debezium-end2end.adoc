@@ -192,7 +192,9 @@ oc new-app \
 [source, yaml,indent=0]
 ----
 oc rsh `oc get pods -l deployment=mysql -o name` mysql -u mysqluser -pmysqlpw inventory
-
+----
+[source, yaml,indent=0]
+----
 CREATE TABLE products
 (
     id INT PRIMARY KEY NOT NULL,
