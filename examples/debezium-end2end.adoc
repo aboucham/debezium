@@ -256,6 +256,44 @@ mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector
 oc get kctr mysql-connector -o yaml | yq '.status'
 ----
 
+#### Debug using Rest API:
+
+Check the complete stacktrace in case of error in the status:
+
+
+[source, yaml,indent=0]
+----
+curl debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083/connectors
+["mysql-connector"] 
+----
+[source, yaml,indent=0]
+----
+curl debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083/connectors/mysql-connector/status
+{"name":"mysql-connector","connector":{"state":"RUNNING","worker_id":"debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083"},"tasks":[{"id":0,"state":"RUNNING","worker_id":"debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083"}],"type":"source"}
+----
+
+Validate a configuration in case of error:
+[source, yaml,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X PUT \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect-connect:8083/connector-plugins/MongoDbConnector/config/validate/ -d @- <<'EOF'
+{
+        "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
+        "name": "mongodbconnector",
+        "tasks.max": "1",
+        "mongodb.hosts": "rs0/mongodb:27017",
+        "mongodb.name": "dbserver1",
+        "mongodb.user" : "debezium",
+        "mongodb.password" : "dbz",
+        "database.whitelist" : "inventory",
+        "database.history.kafka.bootstrap.servers" : "my-cluster-kafka-bootstrap:9092"
+}
+EOF
+[source, yaml,indent=0]
+----
+
 [source, yaml,indent=0]
 ----
 status:
