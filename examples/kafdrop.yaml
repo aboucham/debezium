@@ -48,13 +48,9 @@ spec:
               scheme: HTTP
   triggers:
     - type: ConfigChange
-EOF
-
-#### Service
-
-oc create -f - <<EOF
-kind: Service
+---
 apiVersion: v1
+kind: Service
 metadata:
   name: kafdrop
   labels:
@@ -67,13 +63,9 @@ spec:
       targetPort: 9000
   selector:
     deploymentconfig: kafdrop
-EOF
-
-#### Route
-
-oc create -f - <<EOF
-kind: Route
+---
 apiVersion: route.openshift.io/v1
+kind: Route
 metadata:
   labels:
     app: kafdrop
@@ -89,4 +81,3 @@ spec:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
   wildcardPolicy: None
-EOF
