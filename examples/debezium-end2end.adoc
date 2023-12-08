@@ -264,11 +264,17 @@ Check the complete stacktrace in case of error in the status:
 [source, yaml,indent=0]
 ----
 oc exec -i debezium-connect-connect-0 -- curl debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083/connectors
+----
+[source, yaml,indent=0]
+----
 ["mysql-connector"] 
 ----
 [source, yaml,indent=0]
 ----
 oc exec -i debezium-connect-connect-0 -- curl debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083/connectors/mysql-connector/status
+----
+[source, yaml,indent=0]
+----
 {"name":"mysql-connector","connector":{"state":"RUNNING","worker_id":"debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083"},"tasks":[{"id":0,"state":"RUNNING","worker_id":"debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083"}],"type":"source"}
 ----
 
