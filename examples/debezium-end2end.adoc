@@ -269,6 +269,7 @@ oc exec -i debezium-connect-connect-0 -- curl debezium-connect-connect-0.debeziu
 ----
 ["mysql-connector"] 
 ----
+
 [source, yaml,indent=0]
 ----
 oc exec -i debezium-connect-connect-0 -- curl debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083/connectors/mysql-connector/status
@@ -279,6 +280,7 @@ oc exec -i debezium-connect-connect-0 -- curl debezium-connect-connect-0.debeziu
 ----
 
 Validate a configuration in case of error:
+
 [source, yaml,indent=0]
 ----
 oc exec -i debezium-connect-connect-0 -- curl -X PUT \
@@ -297,7 +299,6 @@ oc exec -i debezium-connect-connect-0 -- curl -X PUT \
         "database.history.kafka.bootstrap.servers" : "my-cluster-kafka-bootstrap:9092"
 }
 EOF
-[source, yaml,indent=0]
 ----
 
 [source, yaml,indent=0]
