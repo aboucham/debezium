@@ -14,7 +14,7 @@ Prerequisites:
 - Install Service Registry Operator 
 
 
-## 1. Kafka Cluster Creation
+# I. Kafka Cluster Creation
 
 Create the 'dbz-mysql' namespace: `oc new-project dbz-mysql`
 
@@ -66,14 +66,14 @@ Create Kafka clusters using Kafka CR YAML configuration
     EOF
 ----
 
-## 2. Install Kafdrop:
+### 2. Install Kafdrop:
 
 [source, yaml,indent=0]
 ----
 oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafdrop.yaml
 ----
 
-## 3. Depploy ApiCurio Registry:
+### 3. Depploy ApiCurio Registry:
 
 Deploy the postgres database
 Deploy the ApicurioRegistry CR
@@ -209,7 +209,7 @@ INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
 INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
 ----
 
-## - Kafka Connector CR: Create KC with MYSQL Connector:
+# II - Kafka Connector CR: Create KC with MYSQL Connector:
 
 [source, yaml,indent=0]
 ----
@@ -325,21 +325,24 @@ oc exec -i debezium-connect-connect-0 -- curl -X PUT \
 EOF
 ----
 
-## Add signal configuration and trigger ad hoc snapshot:
-
-### Signal ;;;
+# III - Add signal configuration and trigger ad hoc snapshot:
 
 [source, yaml,indent=0]
 ----
 oc rsh `oc get pods -l deployment=mysql -o name` mysql -u mysqluser -pmysqlpw inventory
 ----
 
-The following example shows a CREATE TABLE command that creates a three-column debezium_signal table:
+The following example shows a CREATE TABLE command that creates a three-column `debezium_signal` table:
 
 [source, yaml,indent=0]
 ----
 CREATE TABLE debezium_signal (id VARCHAR(42) PRIMARY KEY, type VARCHAR(32) NOT NULL, data VARCHAR(2048) NULL);
+----
 
+Let's create a new table to test the signal mechanism
+
+[source, yaml,indent=0]
+----
 oc rsh `oc get pods -l deployment=mysql -o name` mysql -u mysqluser -pmysqlpw inventory
 
 CREATE TABLE customers (
