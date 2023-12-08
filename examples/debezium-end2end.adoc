@@ -246,7 +246,7 @@ EOF
 
 [source, yaml,indent=0]
 ----
-$ oc get kctr
+oc get kctr
 NAME              CLUSTER             CONNECTOR CLASS                              MAX TASKS   READY
 mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector   1           True
 ----
