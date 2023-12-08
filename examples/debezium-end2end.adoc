@@ -130,6 +130,13 @@ TIP: Enable `use-connector-resources` to instantiate Kafka connectors through sp
 
 NOTE: Multiple instances attempting to use the same internal topics will cause unexpected errors, so you must change the values of these properties for each instance.
 
+#### Install Kafdrop:
+
+[source, yaml,indent=0]
+----
+oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafdrop.yaml
+----
+
 #### Check
 
 [source, yaml,indent=0]
