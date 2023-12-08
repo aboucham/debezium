@@ -256,7 +256,31 @@ mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector
 oc get kctr mysql-connector -o yaml | yq '.status'
 ----
 
-#### Debug using Rest API:
+[source, yaml,indent=0]
+----
+status:
+  conditions:
+  - lastTransitionTime: "2023-10-24T12:12:59.267139132Z"
+    status: "True"
+    type: Ready
+  connectorStatus:
+    connector:
+      state: RUNNING
+      worker_id: 10.131.0.22:8083
+    name: mysql-connector
+    tasks:
+    - id: 0
+      state: RUNNING
+      worker_id: 10.131.0.22:8083
+    type: source
+  observedGeneration: 1
+  tasksMax: 1
+  topics:
+  - mysql.inventory.products
+----
+
+
+#### Debugging using Rest API:
 
 Check the complete stacktrace in case of error in the status:
 
@@ -299,29 +323,6 @@ oc exec -i debezium-connect-connect-0 -- curl -X PUT \
         "database.history.kafka.bootstrap.servers" : "my-cluster-kafka-bootstrap:9092"
 }
 EOF
-----
-
-[source, yaml,indent=0]
-----
-status:
-  conditions:
-  - lastTransitionTime: "2023-10-24T12:12:59.267139132Z"
-    status: "True"
-    type: Ready
-  connectorStatus:
-    connector:
-      state: RUNNING
-      worker_id: 10.131.0.22:8083
-    name: mysql-connector
-    tasks:
-    - id: 0
-      state: RUNNING
-      worker_id: 10.131.0.22:8083
-    type: source
-  observedGeneration: 1
-  tasksMax: 1
-  topics:
-  - mysql.inventory.products
 ----
 
 ## Add signal configuration and trigger ad hoc snapshot:
