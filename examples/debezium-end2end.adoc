@@ -130,12 +130,42 @@ TIP: Enable `use-connector-resources` to instantiate Kafka connectors through sp
 
 NOTE: Multiple instances attempting to use the same internal topics will cause unexpected errors, so you must change the values of these properties for each instance.
 
-#### Install Kafdrop:
+## Install Kafdrop:
 
 [source, yaml,indent=0]
 ----
 oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafdrop.yaml
 ----
+
+## Depploy ApiCurio Registry:
+
+Deploy the postgres database
+Deploy the ApicurioRegistry CR
+[source, yaml,indent=0]
+----
+oc new-app -e POSTGRESQL_USER=psql -e POSTGRESQL_PASSWORD=password -e POSTGRESQL_DATABASE=apicurio postgresql
+----
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: registry.apicur.io/v1
+kind: ApicurioRegistry
+metadata:
+  name: apicurioregistry-psql
+spec:
+  configuration:
+    env:
+      - name: REGISTRY_AUTH_RBAC_ENABLED
+        value: 'true'
+    persistence: "sql"
+    sql:
+      dataSource:
+        url: "jdbc:postgresql://postgresql:5432/apicurio"
+        userName: "psql"
+        password: "password"
+EOF
+----
+
 
 #### Check
 
@@ -340,37 +370,6 @@ mysql:{"type":"execute-snapshot","data": {"data-collections": ["inventory.custom
 ----
 
 ## Managing schema with ApiCurio Registry:
-
-Install ApiCurio Registry Operator
-Deploy the postgres database
-Deploy the CR
-[source, yaml,indent=0]
-----
-oc new-app -e POSTGRESQL_USER=psql -e POSTGRESQL_PASSWORD=password -e POSTGRESQL_DATABASE=apicurio postgresql
-----
-[source, yaml,indent=0]
-----
-oc create -f - <<EOF
-apiVersion: registry.apicur.io/v1
-kind: ApicurioRegistry
-metadata:
-  name: apicurioregistry-psql
-spec:
-  configuration:
-    env:
-      - name: REGISTRY_AUTH_RBAC_ENABLED
-        value: 'true'
-    persistence: "sql"
-    sql:
-      dataSource:
-        url: "jdbc:postgresql://postgresql:5432/apicurio"
-        userName: "psql"
-        password: "password"
-EOF
-----
-
-Get the servie url:
-oc get svc
 
 Add the following lines to the kafkaConnector CR for json converter:
 [source, yaml,indent=0]
