@@ -398,49 +398,12 @@ krun bin/kafka-console-producer.sh --bootstrap-server my-cluster-kafka-bootstrap
 mysql:{"type":"execute-snapshot","data": {"data-collections": ["inventory.customers"], "type": "INCREMENTAL"}}
 ----
 
-
-- Remove Schema to the Kafka Connector `mysql-connector`
-
-[source, yaml,indent=0]
-----
-    key.converter: 'org.apache.kafka.connect.json.JsonConverter'
-    key.converter.schemas.enable: false
-    value.converter: 'org.apache.kafka.connect.json.JsonConverter'
-    value.converter.schemas.enable: false
-----
-
-
-- Remove Header to the Kafka Connector `mysql-connector`
-
-[source, yaml,indent=0]
-----
-    transforms: unwrap
-    transforms.unwrap.operation.header: true
-    transforms.unwrap.drop.tombstones: false
-    transforms.unwrap.type: io.debezium.transforms.ExtractNewRecordState
-
-----
-
 ## Managing schema with ApiCurio Registry:
 
-Add the following lines to the kafkaConnector CR for json converter:
-[source, yaml,indent=0]
-----
-oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kc-mysql-connector-signal-sr-json.yaml
-----
-[source, yaml,indent=0]
-----
-    key.converter: io.apicurio.registry.utils.converter.ExtJsonConverter
-    key.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
-    key.converter.apicurio.registry.auto-register: true
-    key.converter.apicurio.registry.find-latest: true
-    value.converter: io.apicurio.registry.utils.converter.ExtJsonConverter
-    value.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
-    value.converter.apicurio.registry.auto-register: true
-    value.converter.apicurio.registry.find-latest: true
-----
+### Source DBZ / Sink Kamelet - AVRO Converter:
 
 Add the following lines to the kafkaConnector CR for Avro converter:
+
 [source, yaml,indent=0]
 ----
 oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kc-mysql-connector-signal-sr-avro.yaml
@@ -458,92 +421,7 @@ oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kc
 ----
 
 
-## Camelk: Deploy kamelet
-
-##### my topic to log. my-topic CR created in the same namespace as camel k
-
-[source, yaml,indent=0]
-----
-oc create -f - <<EOF
-kind: KameletBinding
-apiVersion: camel.apache.org/v1alpha1
-metadata:
-  name: my-topic-to-log
-spec:
-  source:
-    ref:
-      kind: KafkaTopic
-      apiVersion: kafka.strimzi.io/v1beta2
-      name: mysql.inventory.customers
-  sink:
-    ref:
-      apiVersion: camel.apache.org/v1alpha1
-      kind: Kamelet
-      name: log-sink
-EOF
-----
-
-Different namespace:
-
-[source, yaml,indent=0]
-----
-oc create -f - <<EOF
-apiVersion: camel.apache.org/v1alpha1
-kind: KameletBinding
-metadata:
-  name: kafkatopic-to-log
-spec:
-  source:
-    ref:
-      kind: Kamelet
-      apiVersion: camel.apache.org/v1alpha1
-      name: kafka-source
-    properties:
-      bootstrapServers: "my-cluster-kafka-bootstrap:9092"
-      password: "testpassword"
-      topic: "mysql.inventory.customers"
-      user: "test-user"
-      securityProtocol: "PLAINTEXT"
-  sink:
-    ref:
-      apiVersion: camel.apache.org/v1alpha1
-      kind: Kamelet
-      name: log-sink
-EOF
-----
-- Kamelet with ApiCurio Registry Jsonschema handling:
-
-[source, yaml,indent=0]
-----
-oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafka-apicurio-registry-json-source.kamelet.yaml
-----
-
-[source, yaml,indent=0]
-----
-oc create -f - <<EOF
-apiVersion: camel.apache.org/v1alpha1
-kind: KameletBinding
-metadata:
-  name: kafkatopic-apicurio-registry-log
-spec:
-  source:
-    ref:
-      kind: Kamelet
-      apiVersion: camel.apache.org/v1alpha1
-      name: kafka-apicurio-registry-source
-    properties:
-      bootstrapServers: "my-cluster-kafka-bootstrap:9092"
-      topic: "mysql.inventory.customers"
-      apicurioRegistryUrl: "http://apicurioregistry-psql-service:8080/apis/registry/v2"
-  sink:
-    ref:
-      apiVersion: camel.apache.org/v1alpha1
-      kind: Kamelet
-      name: log-sink
-EOF
-----
-
-- Kamelet with ApiCurio Registry Avro handling:
+- Deploy Kamelet/KameletBinding with ApiCurio Registry AVRO handling:
 
 [source, yaml,indent=0]
 ----
@@ -582,3 +460,57 @@ EOF
 ----
 kafka-ar-avro-source-58b5d84f44-2vkkr integration 2023-12-07 09:35:07,525 INFO  [info] (Camel (camel-1) thread #1 - KafkaConsumer[mysql.inventory.customers]) Exchange[ExchangePattern: InOnly, BodyType: org.apache.avro.generic.GenericData.Record, Body: {"before": null, "after": {"id": 11, "first_name": "Test11", "last_name": "TEST11", "email": "test@test.com"}, "source": {"version": "2.4.0.Final", "connector": "mysql", "name": "mysql", "ts_ms": 1701941706000, "snapshot": "false", "db": "inventory", "sequence": null, "table": "customers", "server_id": 1, "gtid": null, "file": "binlog.000002", "pos": 7087, "row": 0, "thread": 51, "query": null}, "op": "c", "ts_ms": 1701941706962, "transaction": null}]
 ----
+
+### Source DBZ / Sink Kamelet - JSON Converter:
+
+- Add the following lines to the kafkaConnector CR for json converter:
+
+[source, yaml,indent=0]
+----
+oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kc-mysql-connector-signal-sr-json.yaml
+----
+[source, yaml,indent=0]
+----
+    key.converter: io.apicurio.registry.utils.converter.ExtJsonConverter
+    key.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
+    key.converter.apicurio.registry.auto-register: true
+    key.converter.apicurio.registry.find-latest: true
+    value.converter: io.apicurio.registry.utils.converter.ExtJsonConverter
+    value.converter.apicurio.registry.url: http://apicurioregistry-psql-service:8080/apis/registry/v2
+    value.converter.apicurio.registry.auto-register: true
+    value.converter.apicurio.registry.find-latest: true
+----
+
+- Deploy Kamelet/KameletBinding with ApiCurio Registry Jsonschema handling:
+
+[source, yaml,indent=0]
+----
+oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafka-apicurio-registry-json-source.kamelet.yaml
+----
+
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: camel.apache.org/v1alpha1
+kind: KameletBinding
+metadata:
+  name: kafkatopic-apicurio-registry-log
+spec:
+  source:
+    ref:
+      kind: Kamelet
+      apiVersion: camel.apache.org/v1alpha1
+      name: kafka-apicurio-registry-source
+    properties:
+      bootstrapServers: "my-cluster-kafka-bootstrap:9092"
+      topic: "mysql.inventory.customers"
+      apicurioRegistryUrl: "http://apicurioregistry-psql-service:8080/apis/registry/v2"
+  sink:
+    ref:
+      apiVersion: camel.apache.org/v1alpha1
+      kind: Kamelet
+      name: log-sink
+EOF
+----
+
+
