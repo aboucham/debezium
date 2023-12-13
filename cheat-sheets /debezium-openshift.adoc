@@ -363,6 +363,45 @@ Accept:application/json
 ----
 ////
 
+=== Validate connector configuration
+[cols="35,65"]
+|===
+
+|`GET //connector-plugins/(string:name)/config/validate`
+|Validate the configuration for the connector.
+
+|===
+
+** request:
+[source, shell,indent=0]
+----
+oc exec -i debezium-connect-connect-0 -- curl -X PUT \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect-connect:8083/connector-plugins/MongoDbConnector/config/validate/ -d @- <<'EOF'
+{
+        "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
+        "name": "mongodbconnector",
+        "tasks.max": "1",
+        "mongodb.hosts": "rs0/mongodb:27017",
+        "mongodb.name": "dbserver1",
+        "mongodb.user" : "debezium",
+        "mongodb.password" : "dbz",
+        "database.whitelist" : "inventory",
+        "database.history.kafka.bootstrap.servers" : "my-cluster-kafka-bootstrap:9092"
+}
+EOF
+----
+
+** response:
+[source,json,subs="attributes+"]
+----
+HTTP/1.1 200 OK
+Accept:application/json
+{"name":"io.debezium.connector.mongodb.MongoDbConnector","error_count":2,"groups":["Common","Transforms","Predicates","Error Handling","Topic Creation","Exactly Once Support","offsets.topic","MongoDB","Connector","Events"],"configs":[{"definition":{...........},{"definition":{"name":"sourceinfo.struct.maker","type":"CLASS","required":false,"default_value":"io.debezium.connector.mongodb.MongoDbSourceInfoStructMaker","importance":"LOW","documentation":"The name of the SourceInfoStructMaker class that returns SourceInfo schema and struct.","group":"Events","width":"MEDIUM","display_name":"Source info struct maker class","dependents":[],"order":19},"value":{"name":"sourceinfo.struct.maker","value":null,"recommended_values":[],"errors":[],"visible":true}}]}
+----
+////
+
 === Check connector status
 
 ==== Command line
