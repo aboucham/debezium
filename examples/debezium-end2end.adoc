@@ -394,7 +394,11 @@ STRIMZI_IMAGE="registry.redhat.io/amq7/amq-streams-kafka-32-rhel8:2.2.0"
 krun() { kubectl run krun-"$(date +%s)" -it --rm --restart="Never" --image="$STRIMZI_IMAGE" -- "$@"; }
 
 krun bin/kafka-console-producer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic mysql.debezium_signal --property parse.key=true --property key.separator=:
+---
+Once the following message is displayed `If you don't see a command prompt, try pressing enter`, you could sent the following message by copy and paste:
 
+[source, yaml,indent=0]
+----
 mysql:{"type":"execute-snapshot","data": {"data-collections": ["inventory.customers"], "type": "INCREMENTAL"}}
 ----
 
