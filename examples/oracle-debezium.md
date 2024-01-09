@@ -64,11 +64,17 @@ aws ec2 authorize-security-group-ingress \
 How to get Oracle DB instance status and to get an Endpoint Address:
 
 ```
-aws rds describe-db-instances --db-instance-identifier my-oracle-instance --query "DBInstances[*].DBInstanceStatus" --output text
-aws rds describe-db-instances --db-instance-identifier my-oracle-instance --query "DBInstances[*].Endpoint.Address" --output text
+aws rds describe-db-instances --db-instance-identifier my-oracle-instance --query "DBInstances[*].[DBInstanceIdentifier,DBInstanceStatus,Endpoint.Address,PubliclyAccessible]" --output table
 ```
-Once the database instance is fully provisioned and ready to use, the status will change to available.
-
+Once the database instance is fully provisioned and ready to use, the status will change to `available`.
+e.g:
+```
+------------------------------------------------------------------------------------------------------------
+|                                            DescribeDBInstances                                           |
++--------------------+------------+---------------------------------------------------------------+--------+
+|  my-oracle-instance|  available |  my-oracle-instance.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  |  True  |
++--------------------+------------+---------------------------------------------------------------+--------+
+```
 Replace the endpoint address in the sqlplus below:
 
 Connect to your Oracle DB:
