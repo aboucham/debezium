@@ -44,6 +44,34 @@ aws rds create-db-instance \
     --license-model license-included
 ```
 
+Make the Oracle instance Public and reachable:
+
+To make the endpoint of your RDS DB instance public and accessible from the internet, follow these steps:
+
+- Modify the Security Group:
+
+You need to modify the security group `--vpc-security-group-ids sg-xxxxxxx` associated with your RDS DB instance to allow inbound traffic on the database port from your IP address or a range of IP addresses.
+
+```
+aws ec2 authorize-security-group-ingress \
+    --group-id sg-xxxxxxx \
+    --protocol tcp \
+    --port 1521 \
+    --cidr 0.0.0.0/0
+```
+
+ Replace YOUR_SECURITY_GROUP_ID with the ID of the security group associated with your RDS instance `--vpc-security-group-ids sg-xxxxxxx`, PORT_NUMBER with the appropriate database port, and YOUR_IP_ADDRESS with your public IP address.
+
+- Modify the DB Instance Public Accessibility: By default, the DB instance is set to not be publicly accessible. You can modify this setting to enable public accessibility:
+  
+```
+aws rds modify-db-instance \
+    --db-instance-identifier my-oracle-instance \
+    --publicly-accessible
+```
+
+NOTE: After making these changes, it might take a few minutes for the changes to propagate and for the endpoint to become publicly accessible.
+
 Connect to your Oracle DB:
 
 ```
