@@ -61,13 +61,13 @@ aws ec2 authorize-security-group-ingress \
 
  Replace YOUR_SECURITY_GROUP_ID with the ID of the security group associated with your RDS instance `--vpc-security-group-ids sg-xxxxxxx`, PORT_NUMBER with the appropriate database port, and YOUR_IP_ADDRESS with your public IP address.
 
-How to get Oracle DB instance Endpoint Address:
+How to get Oracle DB instance status and to get an Endpoint Address:
 
 ```
-aws rds describe-db-instances --db-instance-identifier my-oracle-instance --query "DBInstances[*].Endpoint" --output text
+aws rds describe-db-instances --db-instance-identifier my-oracle-instance --query "DBInstances[*].DBInstanceStatus" --output text
 aws rds describe-db-instances --db-instance-identifier my-oracle-instance --query "DBInstances[*].Endpoint.Address" --output text
-
 ```
+Once the database instance is fully provisioned and ready to use, the status will change to available.
 
 Replace the endpoint address in the sqlplus below:
 
