@@ -11,8 +11,9 @@ aws ec2 describe-security-groups --query "SecurityGroups[*].GroupId" --output te
 ```
 
 List all the `subnets` on specific `VPC` id:
+
 ```
-aws ec2 describe-subnets --filters Name=vpc-id,Values=vpc-xxxxx --query "Subnets[*].[SubnetId,CidrBlock,AvailabilityZone]" --output table
+aws ec2 describe-subnets --query "Subnets[*].[SubnetId, CidrBlock, AvailabilityZone]" --output table
 ```
 
 Choose two `subnets` ids in two different `AvailabilityZone`:
