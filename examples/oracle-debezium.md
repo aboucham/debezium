@@ -174,3 +174,10 @@ status:
   topics:
   - mysql.inventory.products
 ```
+
+Delete Oracle instance in AWS via the command line typically involves interacting with the AWS CLI (Command Line Interface) and RDS-specific commands.:
+
+```
+aws rds delete-db-instance --db-instance-identifier my-oracle-instance --skip-final-snapshot
+```
+
