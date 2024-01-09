@@ -222,4 +222,6 @@ Delete Oracle instance in AWS via the command line typically involves interactin
 
 ```
 aws rds delete-db-instance --db-instance-identifier my-oracle-instance --skip-final-snapshot
+aws rds describe-db-instances --db-instance-identifier my-oracle-instance
 ```
+If the DB instance has been successfully deleted, you should receive an error indicating that the specified DB instance doesn't exist. If the DB instance still exists, the command will return details about the DB instance, including its status.
