@@ -61,15 +61,13 @@ aws ec2 authorize-security-group-ingress \
 
  Replace YOUR_SECURITY_GROUP_ID with the ID of the security group associated with your RDS instance `--vpc-security-group-ids sg-xxxxxxx`, PORT_NUMBER with the appropriate database port, and YOUR_IP_ADDRESS with your public IP address.
 
-- Modify the DB Instance Public Accessibility: By default, the DB instance is set to not be publicly accessible. You can modify this setting to enable public accessibility:
-  
+How to get Oracle DB instance Endpoint Address:
+
 ```
-aws rds modify-db-instance \
-    --db-instance-identifier my-oracle-instance \
-    --publicly-accessible
+aws rds describe-db-instances --db-instance-identifier my-oracle-instance --query "DBInstances[*].Endpoint" --output text
 ```
 
-NOTE: After making these changes, it might take a few minutes for the changes to propagate and for the endpoint to become publicly accessible.
+Replace the endpoint address in the sqlplus below:
 
 Connect to your Oracle DB:
 
