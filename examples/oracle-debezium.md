@@ -30,17 +30,16 @@ Create Oracle DB instance:
 ```
 aws rds create-db-instance \
     --db-instance-identifier my-oracle-instance \
-    --db-instance-class db.m5.large \
-    --db-subnet-group-name YOUR_DB_SUBNET_GROUP_NAME \
+    --db-instance-class db.t2.micro \
+    --allocated-storage 20 \
     --engine oracle-se2 \
     --engine-version 19.0.0.0.ru-2020-10.rur-2020-10.r1 \
     --master-username admin \
     --master-user-password mypassword123 \
-    --allocated-storage 100 \
     --db-name oracledb \
+    --publicly-accessible \
     --vpc-security-group-ids sg-xxxxxxx \
-    --backup-retention-period 7 \
-    --no-multi-az \
+    --db-subnet-group-name YOUR_DB_SUBNET_GROUP_NAME \
     --license-model license-included
 ```
 
