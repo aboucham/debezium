@@ -65,6 +65,8 @@ How to get Oracle DB instance Endpoint Address:
 
 ```
 aws rds describe-db-instances --db-instance-identifier my-oracle-instance --query "DBInstances[*].Endpoint" --output text
+aws rds describe-db-instances --db-instance-identifier my-oracle-instance --query "DBInstances[*].Endpoint.Address" --output text
+
 ```
 
 Replace the endpoint address in the sqlplus below:
