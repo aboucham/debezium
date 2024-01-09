@@ -67,6 +67,12 @@ INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
 ## kafka Connect CR - Build - Oracle Instances:
 ## Kafka connect CR ######
 
+Create namespace `dbz-oracle`:
+
+```
+oc new-project dbz-oracle
+```
+
 ```
 oc create -f - <<EOF
 apiVersion: kafka.strimzi.io/v1beta2
@@ -80,22 +86,22 @@ spec:
   build:
     output:
       image: >-
-        image-registry.openshift-image-registry.svc:5000/dbz-mysql/dbz-mysql-connect:latest
+        image-registry.openshift-image-registry.svc:5000/dbz-oracle/dbz-oracle-connect:latest
       type: docker
     plugins:
       - artifacts:
           - type: tgz
             url: >-
-              https://repo1.maven.org/maven2/io/debezium/debezium-connector-mongodb/2.4.0.Final/debezium-connector-mongodb-2.4.0.Final-plugin.tar.gz
+              https://repo1.maven.org/maven2/io/debezium/debezium-connector-oracle/2.4.1.Final/debezium-connector-oracle-2.4.1.Final-plugin.tar.gz
         name: debezium-oracle-connector
   config:
     config.storage.replication.factor: -1
-    config.storage.topic: dbz-mysql-connect-configs
-    group.id: connect-cluster
+    config.storage.topic: debezium-connect-configs
+    group.id: debezium-connect-cluster
     offset.storage.replication.factor: -1
-    offset.storage.topic: dbz-mysql-connect-offsets
+    offset.storage.topic: debezium-connect-offsets
     status.storage.replication.factor: -1
-    status.storage.topic: dbz-mysql-connect-status
+    status.storage.topic: debezium-connect-status
   replicas: 1
   tls:
     trustedCertificates:
@@ -114,6 +120,14 @@ oc get kc debezium-connect -o yaml | yq '.status.connectorPlugins'
 ## kafka Connector CR:
 ### Create KC with Oracle Connector:
 
+1. Create secret for database user and password:
+
+```
+oc create secret generic debezium-secret-oracledb --from-literal=username=admin --from-literal=password=mypassword123 -n dbz-oracle
+```
+
+2. Create `KafkaConnector` named `oracle-connector`:
+
 ```
 oc create -f - <<EOF
 apiVersion: kafka.strimzi.io/v1beta2
@@ -121,26 +135,29 @@ kind: KafkaConnector
 metadata:
   labels:
     strimzi.io/cluster: debezium-connect
-  name: mysql-connector
+  name: oracle-connector
 spec:
-  class: io.debezium.connector.mysql.MySqlConnector
+  class: io.debezium.connector.oracle.OracleConnector
   tasksMax: 1
   autoRestart:
     enabled: true
   config:
-    database.hostname: mysql
-    database.port: 3306
-    database.user: root
-    database.password: debezium
-    database.server.id: 184057
-    database.whitelist: inventory
-    database.names: inventory
-    include.schema.changes: false
-    schema.history.internal.kafka.topic: schemahistory.fullfillment
-    schema.history.internal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
-    topic.prefix: mysql
+    database.hostname: my-oracle-instance.xxxxxxxxx
+    database.port: 1521
+    database.dbname: oracledb
+    database.user: ${secrets:dbz-oracle/debezium-secret-oracledb:username}
+    database.password: ${secrets:dbz-oracle/debezium-secret-oracledb:password}
+    topic.prefix: cdc
     topic.creation.default.replication.factor: 1
     topic.creation.default.partitions: 1
+    table.include.list: "ORACLEDB.PRODUCTS"
+    schema.history.internal.kafka.bootstrap.servers: my-cluster-kafka-bootstrap:9092
+    schema.history.internal.kafka.topic: cdc.oracledb.schema.history
+    schema.history.internal.store.only.captured.tables.ddl: true
+    schema.history.internal.store.only.captured.databases.ddl: true
+    poll.interval.ms: 100
+    max.batch.size: 8192
+    max.queue.size: 32768
 EOF
 ```
 
@@ -149,10 +166,10 @@ EOF
 ```
 $ oc get kctr
 NAME              CLUSTER             CONNECTOR CLASS                              MAX TASKS   READY
-mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector   1           True
+oracle-connector   debezium-connect   io.debezium.connector.oracle.OracleConnector   1           True
 ```
 ```
-oc get kctr mysql-connector -o yaml | yq '.status'
+oc get kctr oracle-connector -o yaml | yq '.status'
 
 status:
   conditions:
@@ -163,7 +180,7 @@ status:
     connector:
       state: RUNNING
       worker_id: 10.131.0.22:8083
-    name: mysql-connector
+    name: oracle-connector
     tasks:
     - id: 0
       state: RUNNING
@@ -172,7 +189,7 @@ status:
   observedGeneration: 1
   tasksMax: 1
   topics:
-  - mysql.inventory.products
+  - cdc.inventory.products
 ```
 
 Delete Oracle instance in AWS via the command line typically involves interacting with the AWS CLI (Command Line Interface) and RDS-specific commands.:
@@ -180,4 +197,3 @@ Delete Oracle instance in AWS via the command line typically involves interactin
 ```
 aws rds delete-db-instance --db-instance-identifier my-oracle-instance --skip-final-snapshot
 ```
-
