@@ -33,7 +33,7 @@ aws rds create-db-instance \
     --db-instance-class db.m5.large \
     --allocated-storage 100 \
     --engine oracle-se2 \
-    --engine-version 19.0.0.0.ru-2020-10.rur-2020-10.r1 \
+    --engine-version 19.0.0.0.ru-2023-10.rur-2023-10.r1 \
     --master-username admin \
     --master-user-password mypassword123 \
     --db-name oracledb \
@@ -126,7 +126,7 @@ spec:
           - type: jar
             url: https://repo1.maven.org/maven2/org/codehaus/groovy/groovy-json/3.0.19/groovy-json-3.0.19.jar
           - type: jar
-            url: https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/19.17.0.0/ojdbc8-19.17.0.0.jar
+            url: https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/19.21.0.0/ojdbc8-19.21.0.0.jar
   config:
     config.storage.replication.factor: -1
     config.storage.topic: debezium-connect-configs
@@ -182,6 +182,7 @@ spec:
     topic.creation.default.replication.factor: 1
     schema.history.internal.kafka.topic: cdc.oracledb.schema.history
     schema.history.internal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
+    table.include.list: 'ORACLEDB.RDSADMIN.CUSTOMERS,ORACLEDB.RDSADMIN.PRODUCTS,ORACLEDB.RDSADMIN.PRODUCTS_ON_HAND,ORACLEDB.RDSADMIN.EMPLOYEES,ORACLEDB.RDSADMIN.ORDERS'
   tasksMax: 1
 ```
 
