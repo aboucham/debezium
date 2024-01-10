@@ -84,18 +84,8 @@ sqlplus admin/mypassword123@my-oracle-instance.xxxxxxxxx:1521/oracledb
 ```
 
 ```
-CREATE TABLE products
-(
-    id INT PRIMARY KEY NOT NULL,
-    name VARCHAR(100),
-    model VARCHAR(100),
-    price INT
-);
-
-
-INSERT INTO products VALUES (1, 'LenovoT41', 'Lenovo T 41', 3);
-INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
-INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
+curl -O https://raw.githubusercontent.com/aboucham/debezium/main/examples/inventory.sql
+sqlplus admin/mypassword123@my-oracle-instance.xxxxxxxxx:1521/oracledb @inventory.sql
 ```
 
 ## kafka Connect CR - Build - Oracle Instances:
