@@ -176,8 +176,8 @@ spec:
     database.hostname: my-oracle-instance.xxxxxxxxxx
     database.port: 1521
     database.dbname: oracledb
-    database.user: admin
-    database.password: mypassword123
+    database.user: ${secrets:dbz-oracle/debezium-secret-oracledb:username}
+    database.password: ${secrets:dbz-oracle/debezium-secret-oracledb:password}
     topic.prefix: cdc
     topic.creation.default.partitions: 1
     topic.creation.default.replication.factor: 1
