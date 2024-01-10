@@ -171,27 +171,18 @@ metadata:
   name: oracle-connector
 spec:
   class: io.debezium.connector.oracle.OracleConnector
-  tasksMax: 1
-  autoRestart:
-    enabled: true
   config:
-    database.hostname: my-oracle-instance.xxxxxxxxx
+    database.hostname: my-oracle-instance.xxxxxxxxxx
     database.port: 1521
     database.dbname: oracledb
-    database.user: ${secrets:dbz-oracle/debezium-secret-oracledb:username}
-    database.password: ${secrets:dbz-oracle/debezium-secret-oracledb:password}
+    database.user: admin
+    database.password: mypassword123
     topic.prefix: cdc
-    topic.creation.default.replication.factor: 1
     topic.creation.default.partitions: 1
-    table.include.list: "ORACLEDB.PRODUCTS"
-    schema.history.internal.kafka.bootstrap.servers: my-cluster-kafka-bootstrap:9092
+    topic.creation.default.replication.factor: 1
     schema.history.internal.kafka.topic: cdc.oracledb.schema.history
-    schema.history.internal.store.only.captured.tables.ddl: true
-    schema.history.internal.store.only.captured.databases.ddl: true
-    poll.interval.ms: 100
-    max.batch.size: 8192
-    max.queue.size: 32768
-EOF
+    schema.history.internal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
+  tasksMax: 1
 ```
 
 ## Check Status:
