@@ -183,7 +183,7 @@ spec:
     topic.creation.default.replication.factor: 1
     schema.history.internal.kafka.topic: cdc.oracledb.schema.history
     schema.history.internal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
-    table.include.list: 'ORACLEDB.RDSADMIN.CUSTOMERS,ORACLEDB.RDSADMIN.PRODUCTS,ORACLEDB.RDSADMIN.PRODUCTS_ON_HAND,ORACLEDB.RDSADMIN.EMPLOYEES,ORACLEDB.RDSADMIN.ORDERS'
+    table.include.list: 'ORACLEDB.ADMIN.CUSTOMERS,ORACLEDB.ADMIN.PRODUCTS,ORACLEDB.ADMIN.PRODUCTS_ON_HAND,ORACLEDB.ADMIN.EMPLOYEES,ORACLEDB.ADMIN.ORDERS'
   tasksMax: 1
 ```
 
