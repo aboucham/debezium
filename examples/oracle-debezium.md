@@ -143,6 +143,7 @@ spec:
   version: 3.5.0
 EOF
 ```
+NOTE: Ensure that jdbc driver has the same version as Oracle DB `ojdbc8-19.21.0.0.jar`
 
 ## Check
 
