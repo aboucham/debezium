@@ -1,0 +1,311 @@
+# Title: From mySQL to Postgress using JDBC Sink Debezium Connector and AMQ Streams
+
+Environment Setup:
+
+- AMQ Streams 2.5.0
+- Debezium 2.5.0.Final
+- MySQL 8.0
+- PostGres
+
+Prerequisites:
+
+- Install AMQ Streams Operator from OperatorHub
+
+# I. Kafka Cluster Creation
+
+Create the 'dbz-mysql' namespace: `oc new-project dbz-mysql`
+
+Create Kafka clusters using Kafka CR YAML configuration
+
+[source, yaml,indent=0]
+----
+    oc create -f - <<EOF
+    apiVersion: kafka.strimzi.io/v1beta2
+    kind: Kafka
+    metadata:
+      name: my-cluster
+    spec:
+      kafka:
+        config:
+          offsets.topic.replication.factor: 1
+          transaction.state.log.replication.factor: 1
+          transaction.state.log.min.isr: 2
+          default.replication.factor: 1
+          min.insync.replicas: 1
+          inter.broker.protocol.version: '3.5'
+        storage:
+          type: jbod
+          volumes:
+            - deleteClaim: false
+              id: 0
+              size: 1Gi
+              type: persistent-claim
+        listeners:
+          - name: plain
+            port: 9092
+            type: internal
+            tls: false
+          - name: tls
+            port: 9093
+            type: internal
+            tls: true
+        version: 3.5.0
+        replicas: 3
+      entityOperator:
+        topicOperator: {}
+        userOperator: {}
+      zookeeper:
+        storage:
+          deleteClaim: false
+          size: 1Gi
+          type: persistent-claim
+        replicas: 3
+    EOF
+----
+
+### 2. Install Kafdrop:
+
+[source, yaml,indent=0]
+----
+oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafdrop.yaml
+----
+
+## 3. Build and deploy Debezium connectors using KafkaConnect Custom Resource (CR)
+
+- Install Kafka connect CR with Debezium plugins through AMQ Streams:
+
+
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: debezium-connect
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  bootstrapServers: 'my-cluster-kafka-bootstrap:9093'
+  build:
+    output:
+      image: >-
+        image-registry.openshift-image-registry.svc:5000/dbz-mysql/dbz-mysql-connect:latest
+      type: docker
+    plugins:
+      - artifacts:
+          - type: tgz
+            url: >-
+              https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/2.4.0.Final/debezium-connector-postgres-2.4.0.Final-plugin.tar.gz
+        name: debezium-postgres-connector
+      - artifacts:
+          - type: tgz
+            url: >-
+              https://repo1.maven.org/maven2/io/debezium/debezium-connector-mysql/2.4.0.Final/debezium-connector-mysql-2.4.0.Final-plugin.tar.gz
+        name: debezium-mysql-connector
+      - artifacts:
+          - type: tgz
+            url: >-
+              https://repo1.maven.org/maven2/io/debezium/debezium-connector-jdbc/2.5.0.Final/debezium-connector-jdbc-2.5.0.Final-plugin.tar.gz
+        name: debezium-jdbc-connector
+  config:
+    config.storage.replication.factor: -1
+    config.storage.topic: debezium-connect-configs
+    group.id: debezium-connect-cluster
+    offset.storage.replication.factor: -1
+    offset.storage.topic: debezium-connect-offsets
+    status.storage.replication.factor: -1
+    status.storage.topic: debezium-connect-status
+  replicas: 1
+  tls:
+    trustedCertificates:
+      - certificate: ca.crt
+        secretName: my-cluster-cluster-ca-cert
+  version: 3.5.0
+EOF
+----
+
+TIP: Enable `use-connector-resources` to instantiate Kafka connectors through specific custom resources:
+`oc annotate kafkaconnects2is my-connect-cluster strimzi.io/use-connector-resources=true`
+
+NOTE: Multiple instances attempting to use the same internal topics will cause unexpected errors, so you must change the values of these properties for each instance.
+
+
+### Check
+
+[source, yaml,indent=0]
+----
+oc get kc debezium-connect -o yaml | yq '.status.connectorPlugins'
+----
+
+## 3. Deploy pre-populated MySQL instance
+
+#### Configure credentials for the database:
+
+[source, yaml,indent=0]
+----
+oc new-app \
+    -e MYSQL_ROOT_PASSWORD=debezium \
+    -e MYSQL_USER=mysqluser \
+    -e MYSQL_PASSWORD=mysqlpw \
+    -e MYSQL_DATABASE=inventory \
+    mysql:8.0-el9
+----
+
+[source, yaml,indent=0]
+----
+oc rsh `oc get pods -l deployment=mysql -o name` mysql -u mysqluser -pmysqlpw inventory
+----
+[source, yaml,indent=0]
+----
+CREATE TABLE products
+(
+    id INT PRIMARY KEY NOT NULL,
+    name VARCHAR(100),
+    model VARCHAR(100),
+    price INT
+);
+
+
+INSERT INTO products VALUES (1, 'LenovoT41', 'Lenovo T 41', 3);
+INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
+INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
+----
+
+# II - Kafka Connector CR: Create KC with MYSQL Connector:
+
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  labels:
+    strimzi.io/cluster: debezium-connect
+  name: mysql-connector
+spec:
+  class: io.debezium.connector.mysql.MySqlConnector
+  tasksMax: 1
+  autoRestart:
+    enabled: true
+  config:
+    database.hostname: mysql
+    database.port: 3306
+    database.user: root
+    database.password: debezium
+    database.server.id: 184057
+    database.whitelist: inventory
+    database.names: inventory
+    include.schema.changes: false
+    schema.history.internal.kafka.topic: schemahistory.fullfillment
+    schema.history.internal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
+    topic.prefix: mysql
+    topic.creation.default.replication.factor: 1
+    topic.creation.default.partitions: 1
+EOF
+----
+
+#### Check Status:
+
+[source, yaml,indent=0]
+----
+oc get kctr
+NAME              CLUSTER             CONNECTOR CLASS                              MAX TASKS   READY
+mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector   1           True
+----
+
+[source, yaml,indent=0]
+----
+oc get kctr mysql-connector -o yaml | yq '.status'
+----
+
+[source, yaml,indent=0]
+----
+status:
+  conditions:
+  - lastTransitionTime: "2023-10-24T12:12:59.267139132Z"
+    status: "True"
+    type: Ready
+  connectorStatus:
+    connector:
+      state: RUNNING
+      worker_id: 10.131.0.22:8083
+    name: mysql-connector
+    tasks:
+    - id: 0
+      state: RUNNING
+      worker_id: 10.131.0.22:8083
+    type: source
+  observedGeneration: 1
+  tasksMax: 1
+  topics:
+  - mysql.inventory.products
+----
+
+    
+### 5. Depploy Postgress DB and JDBC Sink Connector:
+
+Deploy the postgres database
+[source, yaml,indent=0]
+----
+oc new-app -e POSTGRESQL_USER=psql -e POSTGRESQL_PASSWORD=password -e POSTGRESQL_DATABASE=apicurio postgresql
+----
+
+Deploy JDBC Sink Connector:
+
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  labels:
+    strimzi.io/cluster: debezium-connect
+  name: jdbc-sink-connector
+spec:
+  class: io.debezium.connector.jdbc.JdbcSinkConnector
+  tasksMax: 1
+  autoRestart:
+    enabled: true
+  config:
+    connection.url: jdbc:postgresql://postgresql:5432/apicurio
+    connection.username: psql
+    connection.password: password
+    insert.mode: upsert
+    delete.enabled: true
+    primary.key.mode: record_key
+    schema.evolution: basic
+    database.time_zone: UTC
+    topics: mysql.inventory.products
+EOF
+----
+
+## Test the entire flow:
+
+Insert Data on the source DB (MySQL):
+
+[source, yaml,indent=0]
+----
+oc rsh `oc get pods -l deployment=mysql -o name` mysql -u mysqluser -pmysqlpw inventory
+----
+[source, yaml,indent=0]
+----
+INSERT INTO products VALUES (1, 'LenovoT41', 'Lenovo T 41', 3);
+INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
+INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
+----
+
+Check the data on the Destination DB (Postgress):
+      
+[source, yaml,indent=0]
+oc rsh `oc get pods -l deployment=postgresql -o name` psql -d apicurio -U psql
+----  
+[source, yaml,indent=0]
+----
+apicurio=> select * from mysql_inventory_products;
+ id |     name      |    model     | price
+----+---------------+--------------+-------
+  1 | LenovoT41     | Lenovo T 41  |     3
+  2 | LenovoT41     | Lenovo UT 41 |    45
+  3 | DELL          | DELL 41      |    45
+ (3 rows)
+----
