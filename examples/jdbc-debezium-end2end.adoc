@@ -292,6 +292,7 @@ INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
 Check the data on the Destination DB (Postgress):
       
 [source, yaml,indent=0]
+----
 oc rsh `oc get pods -l deployment=postgresql -o name` psql -d apicurio -U psql
 ----  
 [source, yaml,indent=0]
