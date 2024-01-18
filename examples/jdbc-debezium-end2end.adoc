@@ -164,11 +164,6 @@ CREATE TABLE products
     model VARCHAR(100),
     price INT
 );
-
-
-INSERT INTO products VALUES (1, 'LenovoT41', 'Lenovo T 41', 3);
-INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
-INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
 ----
 
 # II - Kafka Connector CR: Create KC with MYSQL Connector:
