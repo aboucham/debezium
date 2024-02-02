@@ -1,0 +1,766 @@
+= Debezium on OpenShift
+:experimental: false
+:product-name: Debezium
+:version: 2.4.0
+
+Debezium (https://debezium.io/[https://debezium.io/]) is a distributed open source platform for change data capture. Start it up, point it at your databases, and your applications can start responding to all of the inserts, updates, and deletes that other apps commit to your databases. 
+
+Debezium is durable and fast, so your applications can respond quickly and never miss an event, even when things go wrong.
+
+This cheat sheet covers how to deploy, create, run, and update a Debezium connector on Red Hat OpenShift (https://developers.redhat.com/products/openshift/overview[https://developers.redhat.com/products/openshift/overview]). Figure 1 shows the Debezium architecture.
+
+image::../cheat-sheets/debezium-architecture.png[Figure 1: Overview of the Debezium architecture.]
+
+== Installation and deployment
+
+To install the Red Hat AMQ Streams (https://developers.redhat.com/products/amq/overview[https://developers.redhat.com/products/amq/overview]) cluster:
+
+- Use AMQ Streams to build a Kafka Connect container image that includes the connector plug-ins.
+- Create custom resources (CRs), including `KafkaConnect` and `KafkaConnector`, to configure and deploy connectors.
+- Ensure necessary permissions and prerequisites are met, including access to an OpenShift cluster (see https://developers.redhat.com/developer-sandbox/[https://developers.redhat.com/developer-sandbox/]), a running AMQ Streams Operator, deployed Apache Kafka cluster, and a Red Hat build of Debezium license.
+
+AMQ Streams CR:
+
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: my-cluster
+spec:
+  kafka:
+    config:
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 2
+      default.replication.factor: 1
+      min.insync.replicas: 1
+      inter.broker.protocol.version: '3.5'
+    storage:
+      type: jbod
+      volumes:
+        - deleteClaim: false
+          id: 0
+          size: 1Gi
+          type: persistent-claim
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+    version: 3.5.0
+    replicas: 3
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+  zookeeper:
+    storage:
+      deleteClaim: false
+      size: 1Gi
+      type: persistent-claim
+    replicas: 3
+EOF
+----
+
+== Install KafkaConnect CR with Debezium plug-ins through AMQ Streams
+
+=== Build and deploy the Debezium connectors
+
+Create a `KafkaConnect` CR specifying connector plug-ins and other components:
+
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  annotations:
+    strimzi.io/use-connector-resources: 'true'
+  name: debezium-connect
+spec:
+  bootstrapServers: 'my-cluster-kafka-bootstrap:9093'
+  build:
+    output:
+      image: >-
+        image-registry.openshift-image-registry.svc:5000/debezium/debezium-connect:latest
+      type: docker
+    plugins:
+      - artifacts:
+          - type: tgz
+            url: >-
+              https://repo1.maven.org/maven2/io/debezium/debezium-connector-mongodb/2.4.0.Final/debezium-connector-mongodb-2.4.0.Final-plugin.tar.gz
+        name: debezium-mongodb-connector
+      - artifacts:
+          - type: tgz
+            url: >-
+              https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/2.4.0.Final/debezium-connector-postgres-2.4.0.Final-plugin.tar.gz
+        name: debezium-postgres-connector
+      - artifacts:
+          - type: tgz
+            url: >-
+              https://repo1.maven.org/maven2/io/debezium/debezium-connector-mysql/2.4.0.Final/debezium-connector-mysql-2.4.0.Final-plugin.tar.gz
+        name: debezium-mysql-connector
+  config:
+    config.storage.replication.factor: -1
+    config.storage.topic: debezium-connect-configs
+    group.id: debezium-connect
+    offset.storage.replication.factor: -1
+    offset.storage.topic: debezium-connect-offsets
+    status.storage.replication.factor: -1
+    status.storage.topic: debezium-connect-status
+  replicas: 1
+  tls:
+    trustedCertificates:
+      - certificate: ca.crt
+        secretName: my-cluster-cluster-ca-cert
+  version: 3.5.0
+EOF
+----
+
+=== Verify connector status
+
+Check the status of the `KafkaConnector` resource using OpenShift CLI or web console. Ensure Type and Status columns are set to `Ready` and `True`.
+
+[source, yaml,indent=0]
+----
+$ oc get kc debezium-connect -o yaml | yq '.status.conditions'
+- lastTransitionTime: '2023-10-27T14:16:39.189901299Z'
+  status: 'True'
+  type: Ready
+----
+
+== Commands
+
+All of Debezium's connectors are Kafka Connector source connectors, so you can deploy and manage them using the Kafka Connect service.
+
+A Kafka Connect service has a RESTful API for managing and deploying connectors; the service can be clustered and will automatically distribute the connectors across the cluster, e.g., ensuring that the connector will be seamlessly restarted after a node failure.
+
+[source, shell,indent=0]
+----
+export DEBEZIUM_CONNECT_SVC=my-connect-cluster-connect-api
+# choose the kafka connect service by running `oc get kc debezium-connect -o yaml | yq '.status.url'`
+export CONNECTOR=inventory-connector
+----
+
+=== Check the available connector plug-ins
+
+==== Command line
+
+[source, yaml,indent=0]
+----
+oc get kc debezium-connect -o yaml | yq '.status.connectorPlugins'
+- class: io.debezium.connector.mongodb.MongoDbConnector
+  type: source
+  version: 2.4.0.Final
+- class: io.debezium.connector.mysql.MySqlConnector
+  type: source
+  version: 2.4.0.Final
+- class: io.debezium.connector.postgresql.PostgresConnector
+  type: source
+  version: 2.4.0.Final
+- class: org.apache.kafka.connect.mirror.MirrorCheckpointConnector
+  type: source
+  version: 3.5.0.redhat-00014
+- class: org.apache.kafka.connect.mirror.MirrorHeartbeatConnector
+  type: source
+  version: 3.5.0.redhat-00014
+- class: org.apache.kafka.connect.mirror.MirrorSourceConnector
+  type: source
+  version: 3.5.0.redhat-00014
+----
+
+==== Rest API
+
+[source, shell,indent=0]
+----
+GET /connector-plugins
+----
+
+Request:
+
+[source, shell,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X GET \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://$DEBEZIUM_CONNECT_SVC:8083/connector-plugins
+----
+
+Response:
+
+[source,json,subs="attributes+"]
+----
+HTTP/1.1 200 OK
+Accept:application/json
+{"class":"io.debezium.connector.mongodb.MongoDbConnector","type":"source","version":"1.2.0.Final"},{"class":"io.debezium.connector.mysql.MySqlConnector","type":"source","version":"1.2.0.Final"},{"class":"io.debezium.connector.postgresql.PostgresConnector","type":"source","version":"1.2.0.Final"},{"class":"org.apache.kafka.connect.file.FileStreamSinkConnector","type":"sink","version":"2.5.0"},{"class":"org.apache.kafka.connect.file.FileStreamSourceConnector","type":"source","version":"2.5.0"},{"class":"org.apache.kafka.connect.mirror.MirrorCheckpointConnector","type":"source","version":"1"},{"class":"org.apache.kafka.connect.mirror.MirrorHeartbeatConnector","type":"source","version":"1"},{"class":"org.apache.kafka.connect.mirror.MirrorSourceConnector","type":"source","version":"1"}
+----
+
+=== Get a list of active connectors
+
+==== Command line
+
+[source, shell,indent=0]
+----
+$ oc get kctr
+NAME                   CLUSTER             CONNECTOR CLASS                              MAX TASKS   READY
+inventory-connector   debezium-connect     io.debezium.connector.mysql.MySqlConnector   1           True
+----
+
+==== Rest API
+
+[source, shell,indent=0]
+----
+GET /connectors
+----
+
+Request:
+
+[source, bash,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X GET \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://$DEBEZIUM_CONNECT_SVC:8083/connectors
+----
+
+Response:
+
+[source,json,subs="attributes+"]
+----
+HTTP/1.1 200 OK
+Accept:application/json
+["inventory-connector"]
+----
+
+////
+=== Create Debezium connector
+
+==== REST API
+Create a new Debezium connector:
+
+[source, shell,indent=0]
+----
+POST /connectors
+----
+
+Request:
+
+[source, yaml,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X POST \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://$DEBEZIUM_CONNECT_SVC:8083/connectors -d @- <<'EOF'
+{
+    "name": "inventory-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+        "tasks.max": "1",
+        "database.hostname": "mysql",
+        "database.port": "3306",
+        "database.user": "debezium",
+        "database.password": "dbz",
+        "database.server.id": "184054",
+        "database.server.name": "dbserver",
+        "database.whitelist": "inventory",
+        "database.history.kafka.bootstrap.servers": "my-cluster-kafka-bootstrap:9092",
+        "database.history.kafka.topic": "schema-changes.inventory"
+    }
+}
+EOF
+----
+
+Response:
+
+[source,json,subs="attributes+"]
+----
+HTTP/1.1 201 Created
+Accept:application/json
+{"name":"inventory-connector","config":{"connector.class":"io.debezium.connector.mysql.MySqlConnector","tasks.max":"1","database.hostname":"mysql","database.port":"3306","database.user":"debezium","database.password":"dbz","database.server.id":"184054","database.server.name":"dbserver","database.whitelist":"inventory","database.history.kafka.bootstrap.servers":"my-cluster-kafka-bootstrap:9092","database.history.kafka.topic":"schema-changes.inventory","name":"inventory-connector"},"tasks":[{"connector":"inventory-connector","task":0}],"type":"source"}
+----
+
+==== Using CR (Custom Resource)
+
+If `use-connector-resources` is enabled for your Kafka Connect resource, you can create the connector instance by creating a specific custom resource:
+
+[source, yaml,indent=0]
+----
+oc apply -f - << EOF
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaConnector
+metadata:
+  name: $CONNECTOR
+  namespace: myproject
+  labels:
+    strimzi.io/cluster: my-connect-cluster
+spec:
+  class: io.debezium.connector.mysql.MySqlConnector
+  tasksMax: 1
+  config:
+    database.hostname: mysql
+    database.port: 3306
+    database.user: debezium
+    database.password: dbz
+    database.server.id: 184054
+    database.server.name: dbserver
+    database.whitelist: inventory
+    database.history.kafka.bootstrap.servers: my-cluster-kafka-bootstrap:9092
+    database.history.kafka.topic: schema-changes.inventory
+EOF
+----
+
+TIP: Enable `use-connector-resources` to instantiate Kafka connectors through specific custom resources:
+
+[source, shell,indent=0]
+----
+oc annotate kafkaconnects2is my-connect-cluster strimzi.io/use-connector-resources=true
+----
+
+[NOTE]
+====
+`oc get kctr --selector strimzi.io/cluster=my-connect-cluster -o name`::
+Check that the resource was created.
+
+`oc get kctr/inventory-connector -o yaml | yq read - status`::
+Check the status of the Debezium Connector from the resource.
+
+`oc apply kctr/inventory-connector` or `oc edit kctr/inventory-connector`::
+Update the Debezium connector `CR`.
+
+`oc delete kctr/inventory-connector`::
+Delete the Debezium connector `CR`.
+====
+
+
+=== Get connector configuration
+
+Get the configuration for the connector:
+
+[source, shell,indent=0]
+----
+GET /connectors/(string:name)/config
+----
+
+Request:
+
+[source, shell,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X GET \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://$DEBEZIUM_CONNECT_SVC:8083/connectors/$CONNECTOR/config
+----
+
+Response:
+
+[source,json,subs="attributes+"]
+----
+HTTP/1.1 200 OK
+Accept:application/json
+{"connector.class":"io.debezium.connector.mysql.MySqlConnector","database.user":"debezium","database.server.id":"184054","database.hostname":"mysql","tasks.max":"1","database.history.kafka.bootstrap.servers":"my-cluster-kafka-bootstrap:9092","database.history.kafka.topic":"schema-changes.inventory","database.password":"dbz","name":"inventory-connector","database.server.name":"dbserver","database.whitelist":"inventory","database.port":"3306"}
+----
+////
+
+=== Validate connector configuration
+
+[source, shell,indent=0]
+----
+GET //connector-plugins/(string:name)/config/validate
+----
+
+Request:
+[source, shell,indent=0]
+----
+oc exec -i debezium-connect-connect-0 -- curl -X PUT \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect-connect:8083/connector-plugins/MongoDbConnector/config/validate/ -d @- <<'EOF'
+{
+        "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
+        "name": "mongodbconnector",
+        "tasks.max": "1",
+        "mongodb.hosts": "rs0/mongodb:27017",
+        "mongodb.name": "dbserver1",
+        "mongodb.user" : "debezium",
+        "mongodb.password" : "dbz",
+        "database.whitelist" : "inventory",
+        "database.history.kafka.bootstrap.servers" : "my-cluster-kafka-bootstrap:9092"
+}
+EOF
+----
+
+Response:
+
+[source,json,subs="attributes+"]
+----
+HTTP/1.1 200 OK
+Accept:application/json
+{"name":"io.debezium.connector.mongodb.MongoDbConnector","error_count":2,"groups":["Common","Transforms","Predicates","Error Handling","Topic Creation","Exactly Once Support","offsets.topic","MongoDB","Connector","Events"],"configs":[{"definition":{...........},{"definition":{"name":"sourceinfo.struct.maker","type":"CLASS","required":false,"default_value":"io.debezium.connector.mongodb.MongoDbSourceInfoStructMaker","importance":"LOW","documentation":"The name of the SourceInfoStructMaker class that returns SourceInfo schema and struct.","group":"Events","width":"MEDIUM","display_name":"Source info struct maker class","dependents":[],"order":19},"value":{"name":"sourceinfo.struct.maker","value":null,"recommended_values":[],"errors":[],"visible":true}}]}
+----
+////
+
+=== Check connector status
+
+==== Command line
+
+[source, yaml,indent=0]
+----
+$ oc get kctr mysql-connector -o yaml | yq '.status.connectorStatus'
+connector:
+  state: RUNNING
+  worker_id: 10.131.0.22:8083
+name: inventory-connector
+tasks:
+  - id: 0
+    state: RUNNING
+    worker_id: 10.131.0.22:8083
+type: source
+----
+
+==== Rest API
+
+Get current status of the connector:
+
+[source, shell,indent=0]
+----
+GET /connectors/(string:name)/status
+----
+
+Request:
+
+[source, shell,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X GET \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://$DEBEZIUM_CONNECT_SVC:8083/connectors/$CONNECTOR/status
+----
+
+Response:
+
+[source,json,subs="attributes+"]
+----
+HTTP/1.1 200 OK
+Accept:application/json
+{"name":"inventory-connector","connector":{"state":"RUNNING","worker_id":"10.131.0.22:8083"},"tasks":[{"id":0,"state":"RUNNING","worker_id":"10.131.0.22:8083"}],"type":"source"}
+----
+
+=== Update connector
+
+Create a new connector using the given configuration, or update the configuration for an existing connector:
+
+[source, shell,indent=0]
+----
+PUT /connectors/(string:name)/config`
+----
+
+Request:
+
+[source, yaml,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -i -X PUT -H "Accept:application/json" -H "Content-Type:application/json" http://$DEBEZIUM_CONNECT_SVC:8083/connectors/$CONNECTOR/config/ -d @- <<'EOF'
+{
+        "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+        "tasks.max": "1",
+        "database.hostname": "mysql",
+        "database.port": "3306",
+        "database.user": "debezium",
+        "database.password": "dbz",
+        "database.server.id": "184054",
+        "database.server.name": "dbserver",
+        "database.whitelist": "inventory",
+        "database.history.kafka.bootstrap.servers": "my-cluster-kafka-bootstrap:9092",
+        "database.history.kafka.topic": "schema-changes.inventory",
+        "include.schema.changes": "false"
+    }
+}
+EOF
+----
+
+Response:
+
+[source,json,subs="attributes+"]
+----
+HTTP/1.1 200 OK
+Accept:application/json
+{"name":"inventory-connector","config":{"connector.class":"io.debezium.connector.mysql.MySqlConnector","tasks.max":"1","database.hostname":"mysql","database.port":"3306","database.user":"debezium","database.password":"dbz","database.server.id":"184054","database.server.name":"dbserver","database.whitelist":"inventory","database.history.kafka.bootstrap.servers":"my-cluster-kafka-bootstrap:9092","database.history.kafka.topic":"schema-changes.inventory","include.schema.changes":"false","name":"inventory-connector"},"tasks":[{"connector":ta not shown]
+"inventory-connector","task":0}],"type":"source"}
+----
+
+=== Restart connector
+
+==== Command line
+
+[source, shell,indent=0]
+----
+$ oc annotate kctr mysql-connector strimzi.io/restart=true
+kafkaconnector.kafka.strimzi.io/mysql-connector annotated
+----
+
+==== Rest API
+
+Restart the connector:
+
+[source, shell,indent=0]
+----
+POST /connectors/(string:name)/restart
+----
+
+Request:
+
+[source, shell,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X POST \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://$DEBEZIUM_CONNECT_SVC:8083/connectors/$CONNECTOR/restart
+----
+
+Response:
+
+[source,json,subs="attributes+"]
+----
+HTTP/1.1 204 No Content
+Accept:application/json
+----
+
+=== Restart the connector/task
+
+==== Command line
+
+[source, shell,indent=0]
+----
+$ oc annotate kctr mysql-connector strimzi.io/restart-task=0
+kafkaconnector.kafka.strimzi.io/mysql-connector annotated
+----
+
+==== Rest API
+
+Restart the connector/task:
+
+[source, shell,indent=0]
+----
+POST /connectors/{connector-name}/tasks/{task-id}/restart
+----
+
+Request:
+[source, shell,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X POST \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://$DEBEZIUM_CONNECT_SVC:8083/connectors/$CONNECTOR/tasks/0/restart
+----
+
+Response:
+[source,json,subs="attributes+"]
+----
+HTTP/1.1 204 No Content
+Accept:application/json
+----
+
+=== Pause connector
+
+==== Command line
+
+[source, shell,indent=0]
+----
+$ oc patch kctr mysql-connector --patch '{"spec":{"pause": true}}' --type=merge
+kafkaconnector.kafka.strimzi.io/mysql-connector patched
+----
+
+Check the status:
+
+[source, yaml,indent=0]
+----
+[source, shell,indent=0]
+ oc get kctr mysql-connector -o yaml | yq '.status.connectorStatus'
+connector:
+  state: PAUSED
+  worker_id: 10.131.0.29:8083
+name: mysql-connector
+tasks:
+  - id: 0
+    state: PAUSED
+    worker_id: 10.131.0.29:8083
+type: source
+----
+
+==== Rest API
+
+Pause the connector and its tasks:
+
+[source, shell,indent=0]
+----
+PUT /connectors/(string:name)/pause
+----
+
+Request:
+[source, shell,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X PUT \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://$DEBEZIUM_CONNECT_SVC:8083/connectors/$CONNECTOR/pause
+----
+
+Response:
+[source,http,subs="attributes+"]
+----
+HTTP/1.1 202 Accepted
+Accept:application/json
+----
+
+
+=== Resume a paused connector
+
+Resume a paused connector or do nothing if the connector is not paused:
+
+[source, shell,indent=0]
+----
+PUT /connectors/(string:name)/resume
+----
+
+Request:
+[source, shell,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X PUT \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://$DEBEZIUM_CONNECT_SVC:8083/connectors/$CONNECTOR/resume
+----
+
+Response:
+[source,http,subs="attributes+"]
+----
+HTTP/1.1 202 Accepted
+Accept:application/json
+----
+
+=== Delete a connector
+
+[source, shell,indent=0]
+----
+DELETE /connectors/(string:name)/
+----
+
+Request:
+
+[source, shell,indent=0]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X DELETE \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://$DEBEZIUM_CONNECT_SVC:8083/connectors/$CONNECTOR
+----
+
+Response:
+
+[source,http,subs="attributes+"]
+----
+HTTP/1.1 204 No Content
+Accept:application/json
+----
+
+TIP: As of AMQ Streams 2.6 (strimzi 0.28), the `pause` property will be replaced by `state`. That new property will accept the `paused`, `stopped`, or `running` values. For instance, `oc patch kctr mysql-connector --patch '{"spec":{"state": stopped}}' --type=merge`.
+
+
+== Logs
+
+Change the log level to trace of `io.debezium` as follows:
+
+[source, shell,indent=0]
+----
+export KAFKA_CONNECT_POD=my-connect-cluster-connect-2-hns52
+oc exec -it $KAFKA_CONNECT_POD -- curl -s -X PUT -H "Content-Type:application/json"  http://localhost:8083/admin/loggers/io.debezium -d '{"level": "TRACE"}'
+----
+
+Revert the log level back to `INFO` as follows:
+
+[source, shell,indent=0]
+----
+export KAFKA_CONNECT_POD=my-connect-cluster-connect-2-hns52
+oc exec -it $KAFKA_CONNECT_POD -- curl -s -X PUT -H "Content-Type:application/json"  http://localhost:8083/admin/loggers/io.debezium -d '{"level": "INFO"}'
+----
+
+////
+== Deployment
+
+Debezium is based on Apache Kafka and Kafka Connect, and you can run it on Kubernetes and OpenShift via the Strimzi (https://strimzi.io/[https://strimzi.io/]) project. `Strimzi` provides a set of operators and container images for running Kafka on Kubernetes and OpenShift. 
+
+=== Deploy Kafka and Kafka Connect
+
+[source, shell,indent=0]
+----
+oc new-project myproject
+# install the Strimzi operator 
+oc apply -f https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.19.0/strimzi-cluster-operator-0.19.0.yaml
+# Deploy a single node Kafka broker
+oc apply -f https://github.com/strimzi/strimzi-kafka-operator/raw/0.19.0/examples/kafka/kafka-persistent-single.yaml
+# Deploy a single instance of Kafka Connect with no plug-in installed
+oc apply -f https://github.com/strimzi/strimzi-kafka-operator/raw/0.19.0/examples/connect/kafka-connect-s2i-single-node-kafka.yaml
+----
+
+=== Extend Kafka Connect with Debezium binaries 
+
+Source-to-Image (S2I):
+
+[source, bash,indent=0]
+----
+export DEBEZIUM_VERSION=1.2.0.Final
+mkdir -p plugins && cd plugins && \
+for PLUGIN in {mongodb,mysql,postgres}; do \
+    curl https://repo1.maven.org/maven2/io/debezium/debezium-connector-$PLUGIN/$DEBEZIUM_VERSION/debezium-connector-$PLUGIN-$DEBEZIUM_VERSION-plugin.tar.gz | tar xz; \
+done && \
+oc start-build my-connect-cluster-connect --from-dir=. --follow && \
+cd .. && rm -rf plugins
+----
+
+Docker:
+
+[source, shell,indent=0]
+----
+export IMG_NAME="debezium-connect"
+export DEBEZIUM_VERSION=1.2.0.Final
+
+mkdir -p plugins && cd plugins && \
+for PLUGIN in {mongodb,mysql,postgres}; do \
+    curl https://repo1.maven.org/maven2/io/debezium/debezium-connector-$PLUGIN/$DEBEZIUM_VERSION/debezium-connector-$PLUGIN-$DEBEZIUM_VERSION-plugin.tar.gz | tar xz; \
+done
+cd ..
+cat <<EOF > Dockerfile
+FROM strimzi/kafka:0.19.0-kafka-2.5.0
+USER root:root
+COPY ./plugins/ /opt/kafka/plugins/
+USER 1001
+EOF
+
+oc new-build --binary --name=$IMG_NAME -l app=$IMG_NAME
+oc patch bc/$IMG_NAME -p '{"spec":{"strategy":{"dockerStrategy":{"dockerfilePath":"Dockerfile"}}}}'
+oc start-build $IMG_NAME --from-dir=. --follow
+
+oc create -f - <<EOF
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaConnect
+metadata:
+  name: $IMG_NAME
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  replicas: 1
+  version: 2.5.0
+  image: "image-registry.openshift-image-registry.svc:5000/myproject/$IMG_NAME"
+  bootstrapServers: my-cluster-kafka-bootstrap:9093
+  tls:
+    trustedCertificates:
+      - secretName: my-cluster-cluster-ca-cert
+        certificate: ca.crt
+EOF
+rm -rf plugins && rm Dockerfile
+----
+////
