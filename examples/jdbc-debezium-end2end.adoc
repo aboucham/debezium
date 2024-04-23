@@ -305,3 +305,9 @@ apicurio=> select * from mysql_inventory_products;
   3 | DELL          | DELL 41      |    45
  (3 rows)
 ----
+
+Important: You need to add this converter on the source connector `io.debezium.connector.mysql.converters.JdbcSinkDataTypesConverter`.  This is important so that the JDBC sink connector can make more appropriate decisions about the target system's schema if you're going to allow schema evolution on the sink.
+
+Additionally, it's also recommended when using schema evolution to consider enabling column / data type propagation on the source to again provide more context for schema evolution with the sink, making sure column lengths and precision values are being aligned on the sink to match the source.  Otherwise, a VARCHAR(50) column in the source would end up being created as TEXT in PostgreSQL, which is often not desirable for many reasons.
+
+This ability to work with Debezium's schema parameters to have better schema evolution semantics on the target is one of the benefits of pairing the JDBC sink connector with a Debezium source connector
