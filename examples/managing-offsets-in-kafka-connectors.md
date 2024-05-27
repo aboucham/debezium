@@ -1,5 +1,4 @@
-# Title: Real-time Database Streaming with Debezium and AMQ Streams
-Demonstrating the integration of Debezium and AMQ Streams for real-time database streaming using MySQL 8.0.
+# Title: Managing offsets in Kafka Connect
 
 Environment Setup:
 
@@ -16,7 +15,8 @@ Prerequisites:
 
 # I. Kafka Cluster Creation
 
-Create the 'dbz-mysql' namespace: `oc new-project dbz-mysql`
+Create the 'dbz-mysql' namespace: `oc new-project dbz-mysql`:
+
 [source, yaml,indent=0]
 ----
 oc new-project dbz-mysql
@@ -101,23 +101,8 @@ spec:
       - artifacts:
           - type: tgz
             url: >-
-              https://repo1.maven.org/maven2/io/debezium/debezium-connector-mongodb/2.4.0.Final/debezium-connector-mongodb-2.4.0.Final-plugin.tar.gz
-        name: debezium-mongodb-connector
-      - artifacts:
-          - type: tgz
-            url: >-
-              https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/2.4.0.Final/debezium-connector-postgres-2.4.0.Final-plugin.tar.gz
-        name: debezium-postgres-connector
-      - artifacts:
-          - type: tgz
-            url: >-
               https://repo1.maven.org/maven2/io/debezium/debezium-connector-mysql/2.4.0.Final/debezium-connector-mysql-2.4.0.Final-plugin.tar.gz
         name: debezium-mysql-connector
-      - artifacts:
-          - type: tgz
-            url: >-
-              https://repo1.maven.org/maven2/io/apicurio/apicurio-registry-distro-connect-converter/2.4.2.Final/apicurio-registry-distro-connect-converter-2.4.2.Final.tar.gz
-        name: apicurio-registry-distro-connect-converter
   config:
     config.storage.replication.factor: -1
     config.storage.topic: debezium-connect-configs
@@ -256,36 +241,40 @@ status:
 
 1.Stop the connector in the original cluster `(PUT /connectors/{name}/stop)`
 
-~~~
+[source, yaml,indent=0]
+----
 oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/stop
 {"error_code":405,"message":"HTTP 405 Method Not Allowed"}sh-4.4$ 
 
 oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/status
-~~~
+----
 
 Doesn't work /stop
 
 - Add `spec.state:stopped` to kafkaConnector CR.
 
 - Check with:
-~~~
+[source, yaml,indent=0]
+----
 oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/status
 {"name":"mysql-connector","connector":{"state":"STOPPED","worker_id":"debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083"},"tasks":[],"type":"source"}%
-~~~
+----
 
 2. Get its offsets `(GET /connectors/{name}/offsets)`
 
-~~~
+[source, yaml,indent=0]
+----
 oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/offsets
 {"offsets":[{"partition":{"server":"mysql"},"offset":{"ts_sec":1716802895,"file":"binlog.000002","pos":1424}}]}
-~~~
+----
 
 3. Delete the connector `(DELETE /connectors/{name})`
 
-~~~
+[source, yaml,indent=0]
+----
 oc delete kafkaConnector mysql-connector
 kafkaconnector.kafka.strimzi.io "mysql-connector" deleted
-~~~
+----
 
 4. Create the connector in the new cluster
 5. Stop it (PUT /connectors/{name}/stop)
@@ -370,12 +359,14 @@ oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-conne
 
 6. Set its offset reusing the output you got from the original cluster (PATCH /connectors/{name}/offsets)
 
-~~~
+[source, yaml,indent=0]
+----
 oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-connector-new/offsets
 {"offsets":[]}%
-~~~
+----
 
-~~~
+[source, yaml,indent=0]
+----
 oc exec -i debezium-connect-new-connect-0 -- curl -X PATCH \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
@@ -395,16 +386,18 @@ oc exec -i debezium-connect-new-connect-0 -- curl -X PATCH \
    ]
 }
 EOF
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   447  100   234  100   213   2437   2218 --:--:-- --:--:-- --:--:--  4656
-{"message":"The Connect framework-managed offsets for this connector have been altered successfully. However, if this connector manages offsets externally, they will need to be manually altered in the system that the connector uses."}%
-~~~
+----
 
-~~~
+[source, yaml,indent=0]
+----
+{"message":"The Connect framework-managed offsets for this connector have been altered successfully. However, if this connector manages offsets externally, they will need to be manually altered in the system that the connector uses."}%
+----
+
+[source, yaml,indent=0]
+----
 oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-connector-new/offsets
 {"offsets":[{"partition":{"server":"mysql"},"offset":{"ts_sec":1716802895,"file":"binlog.000002","pos":1424}}]}%
-~~~
+----
 
 7. Restart the connector (PUT /connectors/{name}/resume)
 
