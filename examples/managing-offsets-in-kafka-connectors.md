@@ -1,4 +1,5 @@
 # Title: Managing offsets in Kafka Connect
+How to keep/preserve topic offset position while recreating a new Kafka Connector ?
 
 Environment Setup:
 
@@ -13,7 +14,7 @@ Prerequisites:
 - Install Service Registry Operator 
 
 
-# I. Kafka Cluster Creation
+# I. Kafka Cluster Creation / Deploying Kafka Connect and Kafka Connector
 
 Create the 'dbz-mysql' namespace: `oc new-project dbz-mysql`:
 
@@ -68,13 +69,7 @@ Create Kafka clusters using Kafka CR YAML configuration
     EOF
 ```
 
-### 2. Install Kafdrop:
-
-```
-oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafdrop.yaml
-```
-
-## 3. Build and deploy Debezium connectors using KafkaConnect Custom Resource (CR)
+## Build and deploy Debezium connectors using KafkaConnect Custom Resource (CR)
 
 - Install Kafka connect CR with Debezium plugins through AMQ Streams:
 
@@ -128,7 +123,7 @@ NOTE: Multiple instances attempting to use the same internal topics will cause u
 oc get kc debezium-connect -o yaml | yq '.status.connectorPlugins'
 ```
 
-## 3. Deploy pre-populated MySQL instance
+## Deploy pre-populated MySQL instance
 
 #### Configure credentials for the database:
 
@@ -159,7 +154,7 @@ INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
 INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
 ```
 
-# II - Kafka Connector CR: Create KC with MYSQL Connector:
+## Kafka Connector CR: Create KC with MYSQL Connector:
 
 ```
 oc create -f - <<EOF
@@ -225,24 +220,20 @@ status:
   - mysql.inventory.products
 ```
 
+# How to keep/preserve topic offset position while recreating a new Kafka Connector ?
 
+Please follow the below steps:
 
-1.Stop the connector in the original cluster `(PUT /connectors/{name}/stop)`
-
-```
-oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/stop
-{"error_code":405,"message":"HTTP 405 Method Not Allowed"}sh-4.4$ 
-
-oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/status
-```
-
-Doesn't work /stop
+1. Stop the connector in the original cluster `(PUT /connectors/{name}/stop)`
 
 - Add `spec.state:stopped` to kafkaConnector CR.
 
 - Check with:
+
 ```
 oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/status
+```
+```
 {"name":"mysql-connector","connector":{"state":"STOPPED","worker_id":"debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083"},"tasks":[],"type":"source"}%
 ```
 
@@ -250,6 +241,8 @@ oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector
 
 ```
 oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/offsets
+```
+```
 {"offsets":[{"partition":{"server":"mysql"},"offset":{"ts_sec":1716802895,"file":"binlog.000002","pos":1424}}]}
 ```
 
@@ -261,10 +254,7 @@ kafkaconnector.kafka.strimzi.io "mysql-connector" deleted
 ```
 
 4. Create the connector in the new cluster
-5. Stop it (PUT /connectors/{name}/stop)
-
-
-- Install Kafka connect CR with Debezium plugins through AMQ Streams:
+5. Stop it (`state:stopped`)
 
 ```
 oc create -f - <<EOF
@@ -334,16 +324,18 @@ spec:
     topic.creation.default.partitions: 1
 EOF
 ```
-
+Check the status:
 ```
 oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-connector-new/status
 {"name":"mysql-connector-new","connector":{"state":"STOPPED","worker_id":"debezium-connect-new-connect-0.debezium-connect-new-connect.dbz-mysql.svc:8083"},"tasks":[],"type":"source"}%
 ```
 
-6. Set its offset reusing the output you got from the original cluster (PATCH /connectors/{name}/offsets)
+6. Set its offset reusing the output you got from the original cluster `(PATCH /connectors/{name}/offsets)`:
 
 ```
 oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-connector-new/offsets
+```
+```
 {"offsets":[]}%
 ```
 
@@ -375,9 +367,11 @@ EOF
 
 ```
 oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-connector-new/offsets
+```
+```
 {"offsets":[{"partition":{"server":"mysql"},"offset":{"ts_sec":1716802895,"file":"binlog.000002","pos":1424}}]}%
 ```
 
-7. Restart the connector (PUT /connectors/{name}/resume)
+7. Restart the connector `(state:running)`:
 
-Change the state in kafka Connector to `  state: running`
+Change the `state` in kafka Connector to `state: running`
