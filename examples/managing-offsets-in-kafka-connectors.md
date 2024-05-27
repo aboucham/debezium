@@ -17,15 +17,13 @@ Prerequisites:
 
 Create the 'dbz-mysql' namespace: `oc new-project dbz-mysql`:
 
-[source, yaml,indent=0]
-----
+```
 oc new-project dbz-mysql
-----
+```
 
 Create Kafka clusters using Kafka CR YAML configuration
 
-[source, yaml,indent=0]
-----
+```
     oc create -f - <<EOF
     apiVersion: kafka.strimzi.io/v1beta2
     kind: Kafka
@@ -68,21 +66,19 @@ Create Kafka clusters using Kafka CR YAML configuration
           type: persistent-claim
         replicas: 3
     EOF
-----
+```
 
 ### 2. Install Kafdrop:
 
-[source, yaml,indent=0]
-----
+```
 oc apply -f https://raw.githubusercontent.com/aboucham/debezium/main/examples/kafdrop.yaml
-----
+```
 
 ## 3. Build and deploy Debezium connectors using KafkaConnect Custom Resource (CR)
 
 - Install Kafka connect CR with Debezium plugins through AMQ Streams:
 
-[source, yaml,indent=0]
-----
+```
 oc create -f - <<EOF
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnect
@@ -118,7 +114,7 @@ spec:
         secretName: my-cluster-cluster-ca-cert
   version: 3.6.0
 EOF
-----
+```
 
 TIP: Enable `use-connector-resources` to instantiate Kafka connectors through specific custom resources:
 `oc annotate kafkaconnects2is my-connect-cluster strimzi.io/use-connector-resources=true`
@@ -128,31 +124,27 @@ NOTE: Multiple instances attempting to use the same internal topics will cause u
 
 ### Check
 
-[source, yaml,indent=0]
-----
+```
 oc get kc debezium-connect -o yaml | yq '.status.connectorPlugins'
-----
+```
 
 ## 3. Deploy pre-populated MySQL instance
 
 #### Configure credentials for the database:
 
-[source, yaml,indent=0]
-----
+```
 oc new-app \
     -e MYSQL_ROOT_PASSWORD=debezium \
     -e MYSQL_USER=mysqluser \
     -e MYSQL_PASSWORD=mysqlpw \
     -e MYSQL_DATABASE=inventory \
     mysql:8.0-el9
-----
+```
 
-[source, yaml,indent=0]
-----
+```
 oc rsh `oc get pods -l deployment=mysql -o name` mysql -u mysqluser -pmysqlpw inventory
-----
-[source, yaml,indent=0]
-----
+```
+```
 CREATE TABLE products
 (
     id INT PRIMARY KEY NOT NULL,
@@ -165,12 +157,11 @@ CREATE TABLE products
 INSERT INTO products VALUES (1, 'LenovoT41', 'Lenovo T 41', 3);
 INSERT INTO products VALUES (2, 'LenovoT41', 'Lenovo UT 41', 45);
 INSERT INTO products VALUES (3, 'DELL', 'DELL 41', 45);
-----
+```
 
 # II - Kafka Connector CR: Create KC with MYSQL Connector:
 
-[source, yaml,indent=0]
-----
+```
 oc create -f - <<EOF
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
@@ -198,24 +189,21 @@ spec:
     topic.creation.default.replication.factor: 1
     topic.creation.default.partitions: 1
 EOF
-----
+```
 
 #### Check Status:
 
-[source, yaml,indent=0]
-----
+```
 oc get kctr
 NAME              CLUSTER             CONNECTOR CLASS                              MAX TASKS   READY
 mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector   1           True
-----
+```
 
-[source, yaml,indent=0]
-----
+```
 oc get kctr mysql-connector -o yaml | yq '.status'
-----
+```
 
-[source, yaml,indent=0]
-----
+```
 status:
   conditions:
   - lastTransitionTime: "2023-10-24T12:12:59.267139132Z"
@@ -235,46 +223,42 @@ status:
   tasksMax: 1
   topics:
   - mysql.inventory.products
-----
+```
 
 
 
 1.Stop the connector in the original cluster `(PUT /connectors/{name}/stop)`
 
-[source, yaml,indent=0]
-----
+```
 oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/stop
 {"error_code":405,"message":"HTTP 405 Method Not Allowed"}sh-4.4$ 
 
 oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/status
-----
+```
 
 Doesn't work /stop
 
 - Add `spec.state:stopped` to kafkaConnector CR.
 
 - Check with:
-[source, yaml,indent=0]
-----
+```
 oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/status
 {"name":"mysql-connector","connector":{"state":"STOPPED","worker_id":"debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083"},"tasks":[],"type":"source"}%
-----
+```
 
 2. Get its offsets `(GET /connectors/{name}/offsets)`
 
-[source, yaml,indent=0]
-----
+```
 oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/offsets
 {"offsets":[{"partition":{"server":"mysql"},"offset":{"ts_sec":1716802895,"file":"binlog.000002","pos":1424}}]}
-----
+```
 
 3. Delete the connector `(DELETE /connectors/{name})`
 
-[source, yaml,indent=0]
-----
+```
 oc delete kafkaConnector mysql-connector
 kafkaconnector.kafka.strimzi.io "mysql-connector" deleted
-----
+```
 
 4. Create the connector in the new cluster
 5. Stop it (PUT /connectors/{name}/stop)
@@ -282,8 +266,7 @@ kafkaconnector.kafka.strimzi.io "mysql-connector" deleted
 
 - Install Kafka connect CR with Debezium plugins through AMQ Streams:
 
-[source, yaml,indent=0]
-----
+```
 oc create -f - <<EOF
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnect
@@ -319,9 +302,9 @@ spec:
         secretName: my-cluster-cluster-ca-cert
   version: 3.6.0
 EOF
-----
+```
 
-----
+```
 oc create -f - <<EOF
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
@@ -350,23 +333,21 @@ spec:
     topic.creation.default.replication.factor: 1
     topic.creation.default.partitions: 1
 EOF
-----
+```
 
-~~~
+```
 oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-connector-new/status
 {"name":"mysql-connector-new","connector":{"state":"STOPPED","worker_id":"debezium-connect-new-connect-0.debezium-connect-new-connect.dbz-mysql.svc:8083"},"tasks":[],"type":"source"}%
-~~~
+```
 
 6. Set its offset reusing the output you got from the original cluster (PATCH /connectors/{name}/offsets)
 
-[source, yaml,indent=0]
-----
+```
 oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-connector-new/offsets
 {"offsets":[]}%
-----
+```
 
-[source, yaml,indent=0]
-----
+```
 oc exec -i debezium-connect-new-connect-0 -- curl -X PATCH \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
@@ -386,18 +367,16 @@ oc exec -i debezium-connect-new-connect-0 -- curl -X PATCH \
    ]
 }
 EOF
-----
+```
 
-[source, yaml,indent=0]
-----
+```
 {"message":"The Connect framework-managed offsets for this connector have been altered successfully. However, if this connector manages offsets externally, they will need to be manually altered in the system that the connector uses."}%
-----
+```
 
-[source, yaml,indent=0]
-----
+```
 oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-connector-new/offsets
 {"offsets":[{"partition":{"server":"mysql"},"offset":{"ts_sec":1716802895,"file":"binlog.000002","pos":1424}}]}%
-----
+```
 
 7. Restart the connector (PUT /connectors/{name}/resume)
 
