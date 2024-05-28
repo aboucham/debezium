@@ -165,6 +165,7 @@ metadata:
     strimzi.io/cluster: debezium-connect
   name: mysql-connector
 spec:
+  state: running
   class: io.debezium.connector.mysql.MySqlConnector
   tasksMax: 1
   autoRestart:
