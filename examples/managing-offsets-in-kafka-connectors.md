@@ -10,9 +10,6 @@ Environment Setup:
 Prerequisites:
 
 - Install AMQ Streams Operator from OperatorHub
-- Install CamelK Operator from OperatorHub
-- Install Service Registry Operator 
-
 
 # I. Kafka Cluster Creation / Deploying Kafka Connect and Kafka Connector
 
