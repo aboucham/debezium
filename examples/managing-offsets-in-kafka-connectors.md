@@ -66,7 +66,7 @@ Create Kafka clusters using Kafka CR YAML configuration
           size: 1Gi
           type: persistent-claim
         replicas: 3
-    EOF
+EOF
 ```
 
 ## Build and deploy Debezium connectors using KafkaConnect Custom Resource (CR)
