@@ -191,6 +191,8 @@ EOF
 
 ```
 oc get kctr
+```
+```
 NAME              CLUSTER             CONNECTOR CLASS                              MAX TASKS   READY
 mysql-connector   dbz-mysql-connect   io.debezium.connector.mysql.MySqlConnector   1           True
 ```
@@ -261,6 +263,8 @@ oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector
 
 ```
 oc delete kafkaConnector mysql-connector
+```
+```
 kafkaconnector.kafka.strimzi.io "mysql-connector" deleted
 ```
 
@@ -341,6 +345,8 @@ EOF
 Check the status:
 ```
 oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-connector-new/status
+```
+```
 {"name":"mysql-connector-new","connector":{"state":"STOPPED","worker_id":"debezium-connect-new-connect-0.debezium-connect-new-connect.dbz-mysql.svc:8083"},"tasks":[],"type":"source"}%
 ```
 
