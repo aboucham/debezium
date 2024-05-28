@@ -221,12 +221,16 @@ status:
 ```
 
 # How to keep/preserve topic offset position while recreating a new Kafka Connector ?
+# Moving Kafka Connect Connector to a New Cluster
 
-Please follow the below steps:
+If you are running Kafka Connect 3.6.0 (AMQ Streams 2.6), you can use the `/connectors/{connector}/offsets` REST endpoints to retrieve offsets in the existing Connect cluster and set them in their new Connect clusters.
 
-1. Stop the connector in the original cluster `(PUT /connectors/{name}/stop)`
+## Steps:
 
-- Add `spec.state:stopped` to kafkaConnector CR.
+1. **Stop the Connector in the Original Cluster**
+    - Endpoint: `PUT /connectors/{name}/stop`
+    - Action: Stop the connector in the original Kafka Connect cluster.
+    - Add `spec.state:stopped` to kafkaConnector CR.
 
 - Check with:
 
@@ -237,7 +241,11 @@ oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector
 {"name":"mysql-connector","connector":{"state":"STOPPED","worker_id":"debezium-connect-connect-0.debezium-connect-connect.dbz-mysql.svc:8083"},"tasks":[],"type":"source"}%
 ```
 
-2. Get its offsets `(GET /connectors/{name}/offsets)`
+
+
+2. **Get Offsets**
+    - Endpoint: `GET /connectors/{name}/offsets`
+    - Action: Retrieve offsets for the connector in the original cluster.
 
 ```
 oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector/offsets
@@ -246,16 +254,21 @@ oc rsh debezium-connect-connect-0 curl localhost:8083/connectors/mysql-connector
 {"offsets":[{"partition":{"server":"mysql"},"offset":{"ts_sec":1716802895,"file":"binlog.000002","pos":1424}}]}
 ```
 
-3. Delete the connector `(DELETE /connectors/{name})`
+3. **Delete the Connector**
+    - Endpoint: `DELETE /connectors/{name}`
+    - Action: Delete the connector from the original Kafka Connect cluster.
 
 ```
 oc delete kafkaConnector mysql-connector
 kafkaconnector.kafka.strimzi.io "mysql-connector" deleted
 ```
 
-4. Create the connector in the new cluster
-5. Stop it (`state:stopped`)
-
+4. **Create the Connector in the New Cluster**
+    - Action: Set up the connector in the new Kafka Connect cluster.
+5. **Stop the Connector in the New Cluster**
+    - Endpoint: `PUT /connectors/{name}/stop`
+    - Action: Stop the connector in the new Kafka Connect cluster.
+    - Stop it (`state:stopped`)
 ```
 oc create -f - <<EOF
 apiVersion: kafka.strimzi.io/v1beta2
@@ -330,7 +343,11 @@ oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-conne
 {"name":"mysql-connector-new","connector":{"state":"STOPPED","worker_id":"debezium-connect-new-connect-0.debezium-connect-new-connect.dbz-mysql.svc:8083"},"tasks":[],"type":"source"}%
 ```
 
-6. Set its offset reusing the output you got from the original cluster `(PATCH /connectors/{name}/offsets)`:
+
+
+6. **Set Offsets**
+    - Endpoint: `PATCH /connectors/{name}/offsets`
+    - Action: Set the connector's offset in the new Kafka Connect cluster, reusing the output obtained from the original cluster.
 
 ```
 oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-connector-new/offsets
@@ -372,6 +389,10 @@ oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-conne
 {"offsets":[{"partition":{"server":"mysql"},"offset":{"ts_sec":1716802895,"file":"binlog.000002","pos":1424}}]}%
 ```
 
-7. Restart the connector `(state:running)`:
 
-Change the `state` in kafka Connector to `state: running`
+7. **Restart the Connector**
+    - Endpoint: `PUT /connectors/{name}/resume`
+    - Action: Restart the connector in the new Kafka Connect cluster.
+
+     Change the `state` in kafka Connector CR to `state: running`
+
