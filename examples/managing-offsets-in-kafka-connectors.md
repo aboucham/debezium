@@ -220,8 +220,7 @@ status:
   - mysql.inventory.products
 ```
 
-# How to keep/preserve topic offset position while recreating a new Kafka Connector ?
-# Moving Kafka Connect Connector to a New Cluster
+# II - How to keep/preserve topic offset position while recreating a new Kafka Connector ?
 
 If you are running Kafka Connect 3.6.0 (AMQ Streams 2.6), you can use the `/connectors/{connector}/offsets` REST endpoints to retrieve offsets in the existing Connect cluster and set them in their new Connect clusters.
 
@@ -400,3 +399,42 @@ oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-conne
 
      Change the `state` in kafka Connector CR to `state: running`
 
+
+# III. Reset the offsets for a Kafka Connector. 
+
+1. **Stop the Connector in the New Cluster**
+    - Endpoint: `PUT /connectors/{name}/stop`
+    - Action: Stop the kafka connector, in AMQ Streams you can just change the state to (`state:stopped`).
+
+2. **Delete Offsets**
+    - Endpoint: `DELETE /connectors/{name}/offsets`
+    - Action: Delete the connector's offset.
+
+```
+oc exec -i debezium-connect-new-connect-0 -- curl -X DELETE \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://localhost:8083/connectors/mysql-connector-new/offsets
+```
+
+Output:
+
+```
+{"message":"The Connect framework-managed offsets for this connector have been reset successfully. However, if this connector manages offsets externally, they will need to be manually re..."}%
+```
+
+Check the offsets:
+
+```
+oc rsh debezium-connect-new-connect-0 curl localhost:8083/connectors/mysql-connector-new/offsets
+```
+```
+{"offsets":[]}%
+```
+
+
+3. **Restart the Connector**
+    - Endpoint: `PUT /connectors/{name}/resume`
+    - Action: Restart the connector in the new Kafka Connect cluster.
+
+     Change the `state` in kafka Connector CR to `state: running`
