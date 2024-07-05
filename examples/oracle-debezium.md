@@ -185,6 +185,7 @@ spec:
     schema.history.internal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
     table.include.list: 'ORACLEDB.ADMIN.*'
   tasksMax: 1
+EOF
 ```
 
 ## Check Status:
