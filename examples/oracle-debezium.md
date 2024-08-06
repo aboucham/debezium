@@ -228,11 +228,11 @@ metadata:
 spec:
   class: io.debezium.connector.oracle.OracleConnector
   config:
-    database.hostname: my-oracle-instance.xxxxxxxxxx
+    database.hostname: oracle-database-service.default.svc.cluster.local
     database.port: 1521
-    database.dbname: oracledb
-    database.user: admin
-    database.password: mypassword123
+    database.dbname: FREEPDB1
+    database.user: SYSTEM
+    database.password: secret
     topic.prefix: cdc
     topic.creation.default.partitions: 1
     topic.creation.default.replication.factor: 1
