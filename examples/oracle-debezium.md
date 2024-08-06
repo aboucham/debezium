@@ -2,6 +2,61 @@
 
 - AMQ Streams Operator Installed - 2.5.0
 
+To deploy Oracle DB, you could use the free version provided by oracle `container-registry.oracle.com/database/free:23.3.0.0` or AWS:
+
+## Deploy pre-populated Oracle DB instance using Free version:
+
+```
+oc apply -f - <<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oracle-database-deployment
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: oracle-database
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: oracle-database
+    spec:
+      containers:
+        - name: oracle-database-container
+          image: container-registry.oracle.com/database/free:23.3.0.0
+          env:
+            - name: ORACLE_PWD
+              value: secret
+          resources:
+            limits:
+              cpu: 2
+              memory: 4Gi
+          ports:
+            - containerPort: 1521
+          readinessProbe:
+            tcpSocket:
+              port: 1521
+            initialDelaySeconds: 15
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oracle-database-service
+  namespace: default
+spec:
+  selector:
+    app: oracle-database
+  ports:
+    - name: oracle-database-port
+      protocol: TCP
+      port: 1521
+      targetPort: 1521
+EOF
+```
+
 ## Deploy pre-populated Oracle DB instance using AWS:
 
 List all VPC Security group ID:
