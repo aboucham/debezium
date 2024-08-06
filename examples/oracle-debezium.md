@@ -243,6 +243,8 @@ spec:
 EOF
 ```
 
+   - 'storeConfiguration.jdbcConnectionUrl=jdbc:oracle:thin:SYSTEM/secret@oracle-database-service.default.svc.cluster.local:1521/FREEPDB1'
+
 ## Check Status:
 
 ```
