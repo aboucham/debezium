@@ -171,9 +171,9 @@ spec:
       - name: debezium-oracle-connector
         artifacts:
           - type: zip
-            url: https://maven.repository.redhat.com/ga/io/debezium/debezium-connector-oracle/2.5.4.Final-redhat-00001/debezium-connector-oracle-2.5.4.Final-redhat-00001-plugin.zip
+            url: https://maven.repository.redhat.com/ga/io/debezium/debezium-connector-oracle/2.7.3.Final-redhat-00003/debezium-connector-oracle-2.7.3.Final-redhat-00003-plugin.zip
           - type: zip
-            url: https://maven.repository.redhat.com/ga/io/debezium/debezium-scripting/2.5.4.Final-redhat-00001/debezium-scripting-2.5.4.Final-redhat-00001.zip
+            url: https://maven.repository.redhat.com/ga/io/debezium/debezium-scripting/2.7.3.Final-redhat-00003/debezium-scripting-2.7.3.Final-redhat-00003.zip
           - type: jar
             url: https://repo1.maven.org/maven2/org/codehaus/groovy/groovy/3.0.11/groovy-3.0.11.jar
           - type: jar
@@ -195,7 +195,7 @@ spec:
     trustedCertificates:
       - certificate: ca.crt
         secretName: my-cluster-cluster-ca-cert
-  version: 3.7.0
+  version: 3.8.0
 EOF
 ```
 NOTE: Ensure that jdbc driver has the same version as Oracle DB `ojdbc8-19.21.0.0.jar`
