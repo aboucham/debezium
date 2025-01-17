@@ -1,0 +1,87 @@
+## Prerequisties:
+
+- * Crunchy Postgres for Kubernetes: 5.7.0
+- AMQ Streams Operator Installed - 2.8.0
+
+## Deploy pre-populated Postgress Cluster
+
+# 1. Postgres Cluster Creation:
+
+Create the `source` namespace: `oc new-project source`
+
+Create Kafka clusters using Kafka CR YAML configuration
+
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-sql
+data:
+  init.sql: |
+    \c apicuriodb
+    GRANT CREATE ON SCHEMA public TO "apicuriodb";
+EOF
+----
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: apicuriodb
+spec:
+  backups:
+    pgbackrest:
+      repos:
+        - name: repo1
+          volume:
+            volumeClaimSpec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 1Gi
+  databaseInitSQL:
+    key: init.sql
+    name: init-sql
+  instances:
+    - dataVolumeClaimSpec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+      name: instance1
+      replicas: 2
+  port: 5432
+  postgresVersion: 16
+  users:
+    - name: postgres
+    - name: sm-user
+      options: SUPERUSER
+EOF
+----
+
+Extract DB required information from the secret created `mypostgrescluster-pguser-mypostgrescluster` :
+
+[source, yaml,indent=0]
+----
+echo $(oc get secret apicuriodb-pguser-apicuriodb -o yaml | yq '.data.host') |base64 -d
+apicuriodb-primary.source.svc
+
+echo $(oc get secret apicuriodb-pguser-apicuriodb -o yaml | yq '.data.port') |base64 -d
+5432
+
+echo $(oc get secret apicuriodb-pguser-apicuriodb -o yaml | yq '.data.dbname') |base64 -d
+apicuriodb
+
+echo $(oc get secret apicuriodb-pguser-apicuriodb -o yaml | yq '.data.user') |base64 -d
+apicuriodb
+
+echo $(oc get secret apicuriodb-pguser-apicuriodb -o yaml | yq '.data.password') |base64 -d
+ut7>xSCgjwK=ZvE)-[i?88a:
+----
+
+### 2. Depploy ApiCurio Registry:
