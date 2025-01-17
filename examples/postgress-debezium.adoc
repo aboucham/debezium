@@ -1,6 +1,6 @@
 ## Prerequisties:
 
-- * Crunchy Postgres for Kubernetes: 5.7.0
+- Crunchy Postgres for Kubernetes: 5.7.0
 - AMQ Streams Operator Installed - 2.8.0
 
 ## Deploy pre-populated Postgress Cluster
@@ -24,6 +24,7 @@ data:
     GRANT CREATE ON SCHEMA public TO "apicuriodb";
 EOF
 ----
+
 [source, yaml,indent=0]
 ----
 oc create -f - <<EOF
@@ -64,12 +65,105 @@ spec:
 EOF
 ----
 
-Extract DB required information from the secret created `mypostgrescluster-pguser-mypostgrescluster` :
+### 2. Depploy ApiCurio Registry:
+
+### Check:
 
 [source, yaml,indent=0]
 ----
+oc exec -it apicuriodb-instance1-dc8t-0 -- psql -U postgres
+postgres=# \c apicuriodb
+You are now connected to database "apicuriodb" as user "postgres".
+apicuriodb=# SELECT current_database(), current_user;
+ current_database | current_user
+------------------+--------------
+ apicuriodb       | postgres
+(1 row)
+
+apicuriodb=# \du
+                               List of roles
+  Role name   |                         Attributes
+--------------+------------------------------------------------------------
+ _crunchyrepl | Replication
+ apicuriodb   |
+ postgres     | Superuser, Create role, Create DB, Replication, Bypass RLS
+ sm-user      | Superuser
+----
+
+
+
+####. Pods result:  Every 0,5s: oc get pods:
+
+[source, yaml,indent=0]
+----
+NAME                                                READY   STATUS      RESTARTS   AGE
+apicuriodb-backup-6ghq-f66z7                        0/1     Completed   0          4m14s
+apicuriodb-instance1-dc8t-0                         4/4     Running     0          4m42s
+apicuriodb-instance1-tnjl-0                         4/4     Running     0          4m42s
+apicuriodb-repo-host-0                              2/2     Running     0          4m42s
+----
+
+Deploy Kafka: my-cluster:
+
+[source, yaml,indent=0]
+----
+oc apply -f https://raw.githubusercontent.com/strimzi/strimzi-kafka-operator/refs/heads/main/examples/metrics/kafka-metrics.yaml
+----
+
+Deploy Kafka Connect: debezium-connect
+
+[source, yaml,indent=0]
+----
+https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/2.7.4.Final/
+----
+[source, yaml,indent=0]
+----
+oc create -f - <<EOF
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  annotations:
+    strimzi.io/use-connector-resources: 'true'
+  name: debezium-postgres
+spec:
+  bootstrapServers: 'my-cluster-kafka-bootstrap:9093'
+  build:
+    output:
+      image: 'image-registry.openshift-image-registry.svc:5000/dbz-oracle/dbz-oracle-connect:latest'
+      type: docker
+    plugins:
+      - artifacts:
+          - type: zip
+            url: 'https://maven.repository.redhat.com/ga/io/debezium/debezium-connector-postgres/2.7.3.Final-redhat-00003/debezium-connector-postgres-2.7.3.Final-redhat-00003-plugin.zip'
+        name: debezium-postgres-connector
+  config:
+    config.storage.replication.factor: -1
+    config.storage.topic: debezium-postgres-configs
+    group.id: debezium-postgres-cluster
+    offset.storage.replication.factor: -1
+    offset.storage.topic: debezium-postgres-offsets
+    status.storage.replication.factor: -1
+    status.storage.topic: debezium-postgres-status
+  replicas: 1
+  tls:
+    trustedCertificates:
+      - certificate: ca.crt
+        secretName: my-cluster-cluster-ca-cert
+  version: 3.8.0
+EOF
+----
+
+            url: 'https://maven.repository.redhat.com/ga/io/debezium/debezium-connector-postgres/2.7.3.Final-redhat-00003/debezium-connector-postgres-2.7.3.Final-redhat-00003-plugin.zip'
+
+https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/3.0.7.Final/debezium-connector-postgres-3.0.7.Final-plugin.zip
+
+
+Deploy kctr Connector: dbz-postgres-connector
+
+Extract DB required information from the secret created mypostgrescluster-pguser-mypostgrescluster :
+
 echo $(oc get secret apicuriodb-pguser-apicuriodb -o yaml | yq '.data.host') |base64 -d
-apicuriodb-primary.source.svc
+apicuriodb-primary.dbz-oracle.svc
 
 echo $(oc get secret apicuriodb-pguser-apicuriodb -o yaml | yq '.data.port') |base64 -d
 5432
@@ -81,7 +175,75 @@ echo $(oc get secret apicuriodb-pguser-apicuriodb -o yaml | yq '.data.user') |ba
 apicuriodb
 
 echo $(oc get secret apicuriodb-pguser-apicuriodb -o yaml | yq '.data.password') |base64 -d
-ut7>xSCgjwK=ZvE)-[i?88a:
-----
+(SlT5mKAopSGe6>K|]yvms>3
 
-### 2. Depploy ApiCurio Registry:
+Note, you need super user with replication role to avoid the error: io.debezium.DebeziumException: Creation of replication slot failed
+you need to add plugin.name: pgoutput to avoid the error: io.debezium.DebeziumException: Creation of replication slot failed
+
+oc create -f - <<EOF
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  labels:
+    strimzi.io/cluster: debezium-postgres
+  name: dbz-postgres-connector
+spec:
+  class: io.debezium.connector.postgresql.PostgresConnector
+  config:
+    plugin.name: pgoutput
+    database.hostname: apicuriodb-primary.dbz-oracle.svc
+    topic.creation.default.partitions: 1
+    snapshot.mode: initial
+    database.password: '8x+y@@s:lg.TH{c.H<iZZRVc'
+    topic.creation.default.replication.factor: 1
+    topic.prefix: postgres
+    database.port: 5432
+    database.dbname: apicuriodb
+    database.user: sm-user
+  tasksMax: 1
+
+EOF
+
+
+oc exec -it apicuriodb-instance1-dc8t-0 -- psql -U postgres
+run
+SELECT pg_is_in_recovery();
+
+postgres=# SELECT pg_is_in_recovery();
+ pg_is_in_recovery
+-------------------
+ t
+(1 row)
+
+If it returns true, you’re connected to a standby (read-only) instance. If it returns false, you’re on the primary instance.
+
+postgres=# SELECT * FROM pg_replication_slots;
+ slot_name | plugin | slot_type | datoid | database | temporary | active | active_pid | xmin | catalog_xmin | restart_lsn | confirmed_flush_lsn | wal_status | safe_wal_size | two_phase | conflicting
+-----------+--------+-----------+--------+----------+-----------+--------+------------+------+--------------+-------------+---------------------+------------+---------------+-----------+-------------
+(0 rows)
+
+
+In order to create TABLE and add data on it, choose the instance with false in recovery:
+
+
+oc exec -it apicuriodb-instance1-tnjl-0 -- psql -U postgres
+
+postgres=# SELECT pg_is_in_recovery();
+ pg_is_in_recovery
+-------------------
+ f
+(1 row)
+
+postgres=#
+postgres=# \c apicuriodb
+You are now connected to database "apicuriodb" as user "postgres".
+apicuriodb=# CREATE TABLE customers (id SERIAL,first_name VARCHAR(255) NOT NULL,last_name VARCHAR(255) NOT NULL,email VARCHAR(255) NOT NULL,PRIMARY KEY(id));
+CREATE TABLE
+
+
+apicuriodb=# INSERT INTO customers VALUES (1, 'LenovoT41', 'Lenovo T 41', 'test@test.com');
+INSERT 0 1
+apicuriodb=# INSERT INTO customers VALUES (2, 'LenovoT41', 'Lenovo UT 41', 'test@test.com');
+INSERT 0 1
+apicuriodb=# INSERT INTO customers VALUES (3, 'DELL', 'DELL 41', 'test@test.com');
+INSERT 0 1
